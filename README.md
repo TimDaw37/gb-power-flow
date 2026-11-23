@@ -43,9 +43,20 @@ src/page.html              page template
 src/model.js               zonal balance, DC power flow, flow tracing
 data/geo.json              projected DNO areas, coastline, plant locations, interconnectors (built)
 data/manual_locations.json hand-located BM units
-scripts/build_geo.py       builds geo.json (needs the NESO DNO GeoJSON, world-atlas, the Power Station Dictionary and Elexon's BMU reference)
+scripts/fetch_inputs.sh    downloads build inputs into ./inputs (NESO DNO GeoJSON, Elexon BMU reference, Power Station Dictionary, world-atlas)
+scripts/build_geo.py       builds data/geo.json from ./inputs
 scripts/assemble.py        inlines geo.json and model.js into index.html
 ```
+
+## Rebuilding
+
+```
+scripts/fetch_inputs.sh
+python3 scripts/build_geo.py
+python3 scripts/assemble.py
+```
+
+Only needed when plant locations or boundaries change; the page itself fetches live data on load.
 
 ## Data licences
 

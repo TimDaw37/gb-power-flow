@@ -1,4 +1,7 @@
-import json, csv
+import json, csv, re
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent
+INP = ROOT / 'inputs'   # populated by scripts/fetch_inputs.sh (not committed)
 from pyproj import Transformer
 from shapely.geometry import shape, Point, box, mapping
 from shapely.ops import transform
@@ -18,7 +21,7 @@ def svgpath(geom, tol):
             out.append('M' + 'L'.join(f'{x:.1f},{BX[3]-y:.1f}' for x, y in cs) + 'Z')
     return ''.join(out)
 
-dno = json.load(open('/home/claude/build/dno.geojson'))
+dno = json.load(open(INP/'dno.geojson'))
 NAMES = {'_A':'Eastern','_B':'East Midlands','_C':'London','_D':'Merseyside & N Wales','_E':'West Midlands',
  '_F':'North East','_G':'North West','_H':'Southern','_J':'South East','_K':'South Wales','_L':'South West',
  '_M':'Yorkshire','_N':'South Scotland','_P':'North Scotland'}
@@ -29,7 +32,7 @@ for f in dno['features']:
     zones[z] = g
 print(sorted(zones))
 # country backgrounds (lon/lat) -> BNG km, clipped
-eu = json.load(open('/home/claude/build/eu.geojson'))
+eu = json.load(open(INP/'eu.geojson'))
 clip = box(BX[0]-50, BX[1]-50, BX[2]+50, BX[3]+50)
 land = []
 for f in eu['features']:
@@ -37,7 +40,7 @@ for f in eu['features']:
     if g.is_empty: continue
     land.append({'name': f['properties']['name'], 'd': svgpath(g, 1.5)})
 # plants
-P = '/home/claude/osuked/power-station-dictionary/data/'
+P = str(INP/'power-station-dictionary'/'data')+'/'
 loc = {r['dictionary_id']: (float(r['latitude']), float(r['longitude'])) for r in csv.DictReader(open(P+'attribute_sources/plant-locations/plant-locations.csv'))}
 pts = {}   # bmu -> (lat,lon,name)
 for row in csv.DictReader(open(P+'dictionary/ids.csv')):
@@ -45,8 +48,8 @@ for row in csv.DictReader(open(P+'dictionary/ids.csv')):
     for s in row['sett_bmu_id'].split(','):
         s = s.strip()
         if s and not s.startswith('I_'): pts[s] = (*loc[row['dictionary_id']], row['name'])
-manual = json.load(open('/home/claude/scripts/manual.json'))
-bm = json.load(open('/home/claude/probe/bmu.json'))
+manual = json.load(open(ROOT/'data'/'manual_locations.json'))
+bm = json.load(open(INP/'bmu.json'))
 ref = {x['elexonBmUnit']: x for x in bm if x['elexonBmUnit']}
 for u, x in ref.items():
     if u in pts or u.startswith('I_'): continue
@@ -59,12 +62,21 @@ def zone_of(x, y):
     for z, g in zones.items():
         if g.contains(p): return z
     return min(zones, key=lambda z: zones[z].distance(p))
+ft = {r['ngc_bmu_id']: r['fuel_type'] for r in csv.DictReader(open(P+'attribute_sources/bmu-fuel-types/fuel_types.csv', encoding='utf-8-sig'))}
+def fuel_of(u, name):
+    f = (ref.get(u) or {}).get('fuelType') or ft.get(u[2:]) or ''
+    if f: return f
+    n = (name or '').lower()
+    for pat, k in [(r'bess|battery|storage', 'BATTERY'), (r'solar|pv', 'SOLAR'), (r'wind|\bwf\b|offshore', 'WIND'),
+                   (r'hydro', 'NPSHYD'), (r'nuclear', 'NUCLEAR'), (r'ccgt|gas|peaker|power station', 'CCGT'), (r'bio|chp|energy from waste|efw', 'BIOMASS')]:
+        if re.search(pat, n): return k
+    return ''
 plants = []
 ZO = {'HOWAO':'_M','LARYW':'_J','GYMR':'_D','TKNEW':'_B','TKNWW':'_B','RCBKO':'_A','DDGNO':'_A','LNCSW':'_A','HMGTO':'_M','WTMSO':'_M','SHRSW':'_A','THNTO':'_J','RREW':'_G'}
 for u, (lat, lon, name) in pts.items():
     x, y = ll(lat, lon)
     zz = next((z for k, z in ZO.items() if u[2:].startswith(k)), None) or zone_of(x, y)
-    plants.append([u, round(x, 1), round(BX[3]-y, 1), zz, (ref.get(u) or {}).get('fuelType') or '', name])
+    plants.append([u, round(x, 1), round(BX[3]-y, 1), zz, fuel_of(u, name), name])
 gsp = {u: x['gspGroupId'] for u, x in ref.items() if x.get('gspGroupId') and u not in pts and not u.startswith('I_')}
 # zone label points
 zinfo = {}
@@ -88,5 +100,5 @@ for k, n, c, a, b, d, e in IC:
     ics.append({'key': k, 'name': n, 'country': c, 'zone': zone_of(x1, y1),
                 'x1': round(x1,1), 'y1': round(BX[3]-y1,1), 'x2': round(x2,1), 'y2': round(BX[3]-y2,1)})
 out = {'view': [BX[0], 0, BX[2]-BX[0], BX[3]-BX[1]], 'ox': BX[0], 'zones': zinfo, 'land': land, 'plants': plants, 'gsp': gsp, 'ics': ics}
-json.dump(out, open('/home/claude/build/geo.json', 'w'), separators=(',', ':'))
+json.dump(out, open(ROOT/'data'/'geo.json', 'w'), separators=(',', ':'))
 print(len(plants), 'plants', len(gsp), 'gsp-only', [ (i['name'], i['zone']) for i in ics])

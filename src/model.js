@@ -24,6 +24,8 @@
     if (/bess|battery|storage/.test(n)) return 'Storage';
     if (/solar/.test(n)) return 'Solar';
     switch (f) {
+      case 'BATTERY': return 'Storage';
+      case 'SOLAR': return 'Solar';
       case 'WIND': return 'Wind';
       case 'CCGT': case 'OCGT': return 'Gas';
       case 'NUCLEAR': return 'Nuclear';
