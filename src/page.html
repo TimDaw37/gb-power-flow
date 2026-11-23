@@ -129,12 +129,13 @@ a{color:var(--div-neg)}
     <div class="toggles">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
-      <label><input type="checkbox" id="tWind" checked> Wind at 100 m</label>
-      <label><input type="checkbox" id="tSun" checked> Sunshine</label>
+      <label><input type="checkbox" id="tWind" checked> Wind arrows</label>
       <div class="mode"><b>Colour regions by</b>
         <label><input type="radio" name="mode" value="balance" checked> Export / import</label>
         <label><input type="radio" name="mode" value="carbon"> Carbon intensity</label>
         <label><input type="radio" name="mode" value="origin"> Supply to selected region</label>
+        <label><input type="radio" name="mode" value="wind"> Wind speed (100 m)</label>
+        <label><input type="radio" name="mode" value="sun"> Sunshine</label>
       </div>
     </div>
     <div class="legend">
@@ -146,7 +147,6 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="fkeys" id="fkeys"></div>
       <div class="row" id="lgWind"><svg width="34" height="12"><line x1="4" y1="6" x2="28" y2="6" stroke="var(--wind)" stroke-width="2" stroke-linecap="round"/><path d="M23,2 L29,6 L23,10" fill="none" stroke="var(--wind)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>wind at 100 m, length ∝ speed</div>
-      <div class="row" id="lgSun"><svg width="34" height="12"><rect x="2" y="1" width="30" height="10" rx="3" fill="url(#sunlg)"/><defs><linearGradient id="sunlg"><stop offset="0" stop-color="var(--f-solar)" stop-opacity="0"/><stop offset="1" stop-color="var(--f-solar)" stop-opacity=".85"/></linearGradient></defs></svg><span id="lgSunTxt">sunshine (solar radiation)</span></div>
     </div>
     <div id="tip"></div>
   </div>
@@ -197,7 +197,7 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gSun=el('g',{class:'wxs','clip-path':'url(#landclip)'},svg), gWind=el('g',{class:'wxw'},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gSun=el('g',{class:'wxs'},svg), gWind=el('g',{class:'wxw'},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
 for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
 { const defs=el('defs',{},svg); const cp=el('clipPath',{id:'landclip'},defs); el('path',{d:Object.values(GEO.zones).map(z=>z.d).join('')},cp);
   const f=el('filter',{id:'soft',x:'-20%',y:'-20%',width:'140%',height:'140%'},defs); el('feGaussianBlur',{stdDeviation:22},f); gSun.setAttribute('filter','url(#soft)'); }
@@ -270,13 +270,17 @@ function wxAt(ms){ // wind interpolated in time; radiation = mean over the hour 
 }
 let W=null;
 function zoneWx(z){ if(!W) return null; const ix=WXG.zone[z]||[]; if(!ix.length) return null; let ws=0,sw=0; for(const i of ix){ ws+=W[i].ws; sw+=W[i].sw; } return {ws:ws/ix.length, sw:sw/ix.length}; }
+function drawField(){
+  gSun.innerHTML='';
+  if(!W||(mode!=='sun'&&mode!=='wind')) return;
+  if(mode==='sun') gSun.setAttribute('clip-path','url(#landclip)'); else gSun.removeAttribute('clip-path');
+  WXG.pts.forEach((p,i)=>{ const w=W[i]; const v=mode==='sun'?w.sw/600:w.ws/20; if(v<0.01) return;
+    el('circle',{cx:p[2],cy:p[3],r:58,fill:mode==='sun'?'var(--f-solar)':'var(--div-neg)','fill-opacity':Math.min(.9,v*0.9)},gSun); });
+}
 function drawWx(){
-  gSun.innerHTML=''; gWind.innerHTML='';
-  if(!W){ document.getElementById('lgSunTxt').textContent='sunshine (weather data unavailable)'; return; }
-  const maxSw=Math.max(...W.map(w=>w.sw));
-  document.getElementById('lgSunTxt').textContent=maxSw<5?'sunshine: none (night)':`sunshine, up to ${Math.round(maxSw)} W/m²`;
+  gWind.innerHTML='';
+  if(!W) return;
   WXG.pts.forEach((p,i)=>{ const w=W[i];
-    if(w.sw>3) el('circle',{cx:p[2],cy:p[3],r:58,fill:'var(--f-solar)','fill-opacity':Math.min(.85,w.sw/650)},gSun);
     const to=(w.wd+180)*Math.PI/180, ux=Math.sin(to), uy=-Math.cos(to), L=Math.min(58,6+w.ws*3.4);
     const x1=p[2]-ux*L/2, y1=p[3]-uy*L/2, x2=p[2]+ux*L/2, y2=p[3]+uy*L/2, h=5+w.ws*0.25;
     const g=el('g',{},gWind);
@@ -294,7 +298,7 @@ async function load(){
   else { const key=liveStart-offset*1800000; r=cache.get(key)||await fetchPeriod(key); cache.set(key,r); }
   try{ await loadWx(); }catch(e){ console.warn('weather',e); }
   W=wxAt(r.spStart+15*60000);
-  R=r; daRef=r.daRef; draw(); drawWx();
+  R=r; daRef=r.daRef; drawWx(); draw();
   stamp.innerHTML=r.live?`<b>Live</b> · ${fmtT(r.time)} UK time · updates every 5 min`:`${fmtT(r.time,true)} UK time · period ${r.sp}`+(r.embMissing?' · <span class="err">no embedded estimate</span>':'');
   document.getElementById('next').disabled=offset===0; document.getElementById('live').classList.toggle('on',offset===0);
 }
@@ -324,14 +328,18 @@ function natCI(){ let e=0,tot=0; for(const [f,v] of Object.entries(R.nat)){ e+=v
 let mode='balance';
 const seq=(t,col)=>`color-mix(in oklab, ${col} ${Math.round(Math.max(0,Math.min(1,t))*100)}%, var(--div-mid))`;
 function colourZones(){
+  drawField();
   const lgT=document.getElementById('lgTitle'), lgR=document.getElementById('lgRamp'), lgE=document.getElementById('lgEnds');
   for(const [z,p] of Object.entries(zonePaths)){ const q=R.zones[z];
     if(mode==='balance') p.style.fill=divColor(q.net/Math.max(q.demand,300));
     else if(mode==='carbon') p.style.fill=seq(zoneCI(z)/300,'var(--f-gas)');
+    else if(mode==='sun'||mode==='wind') p.style.fill='var(--div-mid)';
     else p.style.fill=z===selected?'var(--div-neg)':seq(Math.sqrt((R.mix[selected]||{})[z]||0)/Math.sqrt(0.5),'var(--div-neg)');
   }
   if(mode==='balance'){ lgT.innerHTML='<b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)'; lgR.style.background='linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))'; lgE.innerHTML='<span>importing</span><span>balanced</span><span>exporting</span>'; }
   else if(mode==='carbon'){ lgT.innerHTML='<b style="color:var(--text-primary)">Carbon intensity</b> of each region’s supply'; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--f-gas))'; lgE.innerHTML='<span>0</span><span>150</span><span>300+ g/kWh</span>'; }
+  else if(mode==='sun'){ const mx=W?Math.max(...W.map(w=>w.sw)):0; lgT.innerHTML='<b style="color:var(--text-primary)">Sunshine</b>: incoming solar radiation'+(W?(mx<5?' – <b>night</b>':''):' (weather data unavailable)'); lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--f-solar))'; lgE.innerHTML='<span>0</span><span>300</span><span>600+ W/m²</span>'; }
+  else if(mode==='wind'){ lgT.innerHTML='<b style="color:var(--text-primary)">Wind speed</b> at 100 m (hub height)'+(W?'':' (weather data unavailable)'); lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--div-neg))'; lgE.innerHTML='<span>0</span><span>10</span><span>20+ m/s</span>'; }
   else { lgT.innerHTML=`<b style="color:var(--text-primary)">Share of ${ZN[selected]}’s supply</b> by region of origin`; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--div-neg))'; lgE.innerHTML='<span>0%</span><span>12%</span><span>50%+</span>'; }
 }
 function draw(){
@@ -426,7 +434,6 @@ document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))r
 document.getElementById('fkeys').innerHTML=FUELS.filter(f=>f[0]!=='Imports').map(([k])=>`<span><i class="sw" style="background:${FCOL[k]}"></i>${k}</span>`).join('');
 document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
 document.getElementById('tWind').onchange=e=>svg.classList.toggle('hide-wind',!e.target.checked);
-document.getElementById('tSun').onchange=e=>svg.classList.toggle('hide-sun',!e.target.checked);
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.classList.contains('zone')){} });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
