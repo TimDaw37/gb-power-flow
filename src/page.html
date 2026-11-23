@@ -113,7 +113,7 @@ h3{font-size:12.5px;margin:12px 0 4px;color:var(--text-secondary);font-weight:60
 .bars .b .val{text-align:right;font-variant-numeric:tabular-nums}
 .hint{color:var(--text-muted);font-size:12.5px}
 @media (max-width:600px){header{padding:10px 12px;gap:4px 10px}h1{font-size:16px}.sub{display:none}.status{margin-left:0;width:100%}.long{display:none}#stamp{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}.tctl{width:100%}
-.toggles,.legend{position:static;max-width:none;margin:8px 10px;border-radius:8px}.toggles{flex-direction:row;flex-wrap:wrap;gap:6px 14px}.toggles .mode{flex-basis:100%}#map{height:auto;min-height:0;aspect-ratio:1000/1250}}
+.toggles,.legend{position:static;max-width:none;margin:8px 10px;border-radius:8px}.toggles{flex-direction:row;flex-wrap:wrap;gap:6px 14px}.toggles .mode{flex-basis:100%}#map{height:auto;min-height:0;aspect-ratio:1000/1305}}
 @media (prefers-reduced-motion: reduce){.flowanim{display:none}}
 .tctl{display:inline-flex;gap:6px;align-items:center}
 .tctl button{min-width:34px}
@@ -191,23 +191,31 @@ const ELX='https://data.elexon.co.uk/bmrs/api/v1';
 const NESO_EMB='https://api.neso.energy/api/3/action/datastore_search?resource_id=db6c038f-98af-4570-ab60-24d71ebd0ae5&limit=8';
 const NESO_DA='https://api.neso.energy/api/3/action/datastore_search_sql?sql=';
 const svg=document.getElementById('map'), tip=document.getElementById('tip');
-const V=GEO.view; const VB=[-175,70,1000,1250];
+const V=GEO.view; const VB=[-175,-5,1000,1305];
 svg.setAttribute('viewBox',VB.join(' '));
 // ---------- zoom & pan (viewBox based; marks keep their on-screen size)
-const VIEW={x:VB[0],y:VB[1],w:VB[2],h:VB[3]}; let rafId=0;
+// BASE is the unzoomed view: GB fitted to the map area and centred in it, nudged clear of the
+// legend/controls column on wide screens; its aspect matches the element, so nothing is letterboxed.
+let BASE={x:VB[0],y:VB[1],w:VB[2],h:VB[3]}; const VIEW={...BASE}; let rafId=0;
+function computeBase(){ const r=svg.getBoundingClientRect(); if(!r.width||!r.height) return;
+  const lp=innerWidth>600?Math.min(285,r.width*0.3):0, s=Math.min((r.width-lp)/VB[2], r.height/VB[3]), cw=VB[2]*s, ch=VB[3]*s;
+  const ox=Math.max(lp,(r.width-cw)/2), oy=(r.height-ch)/2;
+  BASE={x:VB[0]-ox/s, y:VB[1]-oy/s, w:r.width/s, h:r.height/s}; }
 function applyView(){
-  const minW=VB[2]/10; VIEW.w=Math.max(minW,Math.min(VB[2],VIEW.w)); VIEW.h=VB[3]*VIEW.w/VB[2];
-  VIEW.x=Math.max(VB[0]-VIEW.w*0.3,Math.min(VB[0]+VB[2]-VIEW.w*0.7,VIEW.x)); VIEW.y=Math.max(VB[1]-VIEW.h*0.3,Math.min(VB[1]+VB[3]-VIEW.h*0.7,VIEW.y));
-  if(VIEW.w>=VB[2]-0.5){ VIEW.x=VB[0]; VIEW.y=VB[1]; }
+  VIEW.w=Math.max(BASE.w/10,Math.min(BASE.w,VIEW.w)); VIEW.h=BASE.h*VIEW.w/BASE.w;
+  if(VIEW.w>=BASE.w-0.5){ Object.assign(VIEW,BASE); }
+  else { // keep the centre of the view over GB and its seas
+    const cx=Math.max(VB[0],Math.min(VB[0]+VB[2],VIEW.x+VIEW.w/2)), cy=Math.max(VB[1],Math.min(VB[1]+VB[3],VIEW.y+VIEW.h/2));
+    VIEW.x=cx-VIEW.w/2; VIEW.y=cy-VIEW.h/2; }
   svg.setAttribute('viewBox',`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`);
-  K=VB[2]/VIEW.w; svg.style.setProperty('--k',K); svg.classList.toggle('zoomed',K>1.01);
+  K=BASE.w/VIEW.w; svg.style.setProperty('--k',K); svg.classList.toggle('zoomed',K>1.01);
   svg.style.touchAction=K>1.01?'none':'pan-y';
   cancelAnimationFrame(rafId); rafId=requestAnimationFrame(()=>{ if(R) drawLayers(); });
 }
 function svgPt(cx,cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 function unitsPerPx(){ const r=svg.getBoundingClientRect(); return Math.max(VIEW.w/r.width,VIEW.h/r.height); }
 function zoomAt(f,cx,cy){ const r=svg.getBoundingClientRect(); if(cx==null){ cx=r.left+r.width/2; cy=r.top+r.height/2; }
-  const p=svgPt(cx,cy), nw=Math.max(VB[2]/10,Math.min(VB[2],VIEW.w/f)), s=nw/VIEW.w;
+  const p=svgPt(cx,cy), nw=Math.max(BASE.w/10,Math.min(BASE.w,VIEW.w/f)), s=nw/VIEW.w;
   VIEW.x=p.x-(p.x-VIEW.x)*s; VIEW.y=p.y-(p.y-VIEW.y)*s; VIEW.w=nw; applyView(); }
 svg.addEventListener('wheel',e=>{ e.preventDefault(); hideTip(); zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1?0.05:0.0018)),e.clientX,e.clientY); },{passive:false});
 svg.addEventListener('dblclick',e=>{ e.preventDefault(); zoomAt(e.shiftKey?0.5:2,e.clientX,e.clientY); });
@@ -226,9 +234,13 @@ svg.addEventListener('pointerup',endPtr); svg.addEventListener('pointercancel',e
 svg.addEventListener('click',e=>{ if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick=false; } },true);
 document.getElementById('zin').onclick=()=>zoomAt(1.6);
 document.getElementById('zout').onclick=()=>zoomAt(1/1.6);
-document.getElementById('zreset').onclick=()=>{ VIEW.x=VB[0]; VIEW.y=VB[1]; VIEW.w=VB[2]; applyView(); };
+document.getElementById('zreset').onclick=()=>{ Object.assign(VIEW,BASE); applyView(); };
 document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='+'||e.key==='=')zoomAt(1.6); if(e.key==='-'||e.key==='_')zoomAt(1/1.6); if(e.key==='0')document.getElementById('zreset').click(); });
-const fitMap=()=>svg.setAttribute('preserveAspectRatio',innerWidth>900?'xMaxYMid meet':'xMidYMid meet'); fitMap(); addEventListener('resize',fitMap);
+svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+function refit(){ const k=K, cx=VIEW.x+VIEW.w/2, cy=VIEW.y+VIEW.h/2; computeBase();
+  if(k<=1.01) Object.assign(VIEW,BASE); else { VIEW.w=BASE.w/k; VIEW.h=BASE.h/k; VIEW.x=cx-VIEW.w/2; VIEW.y=cy-VIEW.h/2; }
+  applyView(); }
+setTimeout(()=>{ refit(); new ResizeObserver(refit).observe(svg); },0);   // after all declarations below have run
 const FUELS=[['Wind','--f-wind'],['Gas','--f-gas'],['Nuclear','--f-nuclear'],['Solar','--f-solar'],['Hydro & storage','--f-hydro'],['Biomass','--f-biomass'],['Imports','--f-imports'],['Other','--f-other']];
 const fuelKey=f=>(f==='Hydro'||f==='Storage')?'Hydro & storage':f;
 const FCOL=Object.fromEntries(FUELS.map(([k,v])=>[k,`var(${v})`]));
@@ -334,7 +346,7 @@ function divColor(r){ // r in [-1,1]
   return c<0?mixVar('--div-mid','--div-neg',k):mixVar('--div-mid','--div-pos',k);
 }
 function curve(a,b,bend=0.12){ const [x1,y1]=a,[x2,y2]=b; const mx=(x1+x2)/2,my=(y1+y2)/2, dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1; return {d:`M${x1},${y1} Q${mx-dy*bend},${my+dx*bend} ${x2},${y2}`, mx:mx-dy*bend/2, my:my+dx*bend/2, nx:-dy/L*Math.sign(bend||1), ny:dx/L*Math.sign(bend||1)}; }
-function clipToView([x1,y1],[x2,y2]){ const xmin=VB[0]+8,xmax=VB[0]+VB[2]-8,ymin=VB[1]+8,ymax=VB[1]+VB[3]-8; let t=1;
+function clipToView([x1,y1],[x2,y2]){ const xmin=BASE.x+8,xmax=BASE.x+BASE.w-8,ymin=BASE.y+8,ymax=BASE.y+BASE.h-8; let t=1;
   if(x2>xmax)t=Math.min(t,(xmax-x1)/(x2-x1)); if(x2<xmin)t=Math.min(t,(xmin-x1)/(x2-x1)); if(y2<ymin)t=Math.min(t,(ymin-y1)/(y2-y1)); if(y2>ymax)t=Math.min(t,(ymax-y1)/(y2-y1));
   return [x1+(x2-x1)*t,y1+(y2-y1)*t]; }
 let K=1;
@@ -397,9 +409,9 @@ function drawLayers(){
     (byC[c.country] ||= {mw:0,pts:[],land:[]}); byC[c.country].mw+=c.mw; byC[c.country].pts.push(far); byC[c.country].land.push(land);
   }
   for(const [name,o] of Object.entries(byC)){ const lx=o.pts.reduce((s,p)=>s+p[0],0)/o.pts.length, ly=o.pts.reduce((s,p)=>s+p[1],0)/o.pts.length, ax=o.land[0][0], ay=o.land[0][1];
-    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(VB[0]+6,Math.min(VB[0]+VB[2]-6,lx+(lx>ax?8:-8)/K)),y:Math.min(VB[1]+VB[3]-10,ly+(ly>ay?22:-8)/K),class:'iclabel','text-anchor':ly>VB[1]+VB[3]-40?'middle':anchor},gIC);
+    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(BASE.x+6,Math.min(BASE.x+BASE.w-6,lx+(lx>ax?8:-8)/K)),y:Math.min(BASE.y+BASE.h-10,ly+(ly>ay?22:-8)/K),class:'iclabel','text-anchor':ly>BASE.y+BASE.h-40?'middle':anchor},gIC);
     t.textContent=o.mw>=0?`${name} → ${fmt(o.mw)}`:`${name} ← ${fmt(-o.mw)}`;
-    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=VB[0]+VB[2]-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16/K); } } }
+    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=BASE.x+BASE.w-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16/K); } } }
   // inter-zonal flows
   for(const f of R.flows){ if(Math.abs(f.mw)<20)continue; const a=NODE[f.mw>=0?f.a:f.b], b=NODE[f.mw>=0?f.b:f.a];
     const cv=curve(a,b,0.1); const g=el('g',{},gFlow);

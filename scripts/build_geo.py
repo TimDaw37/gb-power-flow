@@ -33,7 +33,7 @@ for f in dno['features']:
 print(sorted(zones))
 # country backgrounds (lon/lat) -> BNG km, clipped
 eu = json.load(open(INP/'eu.geojson'))
-clip = box(BX[0]-50, BX[1]-50, BX[2]+50, BX[3]+50)
+clip = box(BX[0]-600, BX[1]-300, BX[2]+800, BX[3]+400)
 land = []
 for f in eu['features']:
     g = transform(lambda x, y, z=None: ll(y, x) if False else tuple(v/1000 for v in T.transform(x, y)), shape(f['geometry'])).buffer(0).intersection(clip)

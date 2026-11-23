@@ -8,6 +8,6 @@ curl -s -o bmu.json "https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
 npm i -s --prefix . world-atlas@2 topojson-client@3 >/dev/null
 node -e "
 const t=require('./node_modules/topojson-client');const w=require('./node_modules/world-atlas/countries-50m.json');
-const fc=t.feature(w,w.objects.countries);const keep=['Ireland','France','Belgium','Netherlands','Norway','Denmark','Germany','United Kingdom','Luxembourg'];
+const fc=t.feature(w,w.objects.countries);const keep=['Ireland','France','Belgium','Netherlands','Norway','Denmark','Germany','United Kingdom','Luxembourg','Sweden','Faeroe Is.','Switzerland','Spain','Poland'];
 fc.features=fc.features.filter(f=>keep.includes(f.properties.name));require('fs').writeFileSync('eu.geojson',JSON.stringify(fc));"
 echo "inputs ready; now: python3 scripts/build_geo.py && python3 scripts/assemble.py"
