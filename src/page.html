@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GB Power Flow – live indicative map</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-0:#f4f3f0; --surface-1:#fcfcfb; --surface-2:#ffffff;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7c7b76;
+  --border:#dddbd5; --sea:#e9eef3; --land-abroad:#e2e0da; --zone-stroke:#ffffff;
+  --div-neg:#2a78d6; --div-mid:#f0efec; --div-pos:#e34948;
+  --flow:#2b2a28; --flow-ic:#6250d6;
+  --f-wind:#2a78d6; --f-gas:#eb6834; --f-nuclear:#1baf7a; --f-solar:#eda100;
+  --f-hydro:#e87ba4; --f-biomass:#008300; --f-imports:#6250d6; --f-other:#9a9893;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#222220;
+    --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
+    --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
+    --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
+    --flow:#f0efec; --flow-ic:#9085e9;
+    --f-wind:#3987e5; --f-gas:#d95926; --f-nuclear:#199e70; --f-solar:#c98500;
+    --f-hydro:#d55181; --f-biomass:#0ca30c; --f-imports:#9085e9; --f-other:#76756f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#222220;
+  --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
+  --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
+  --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
+  --flow:#f0efec; --flow-ic:#9085e9;
+  --f-wind:#3987e5; --f-gas:#d95926; --f-nuclear:#199e70; --f-solar:#c98500;
+  --f-hydro:#d55181; --f-biomass:#0ca30c; --f-imports:#9085e9; --f-other:#76756f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 20px 10px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;border-bottom:1px solid var(--border);background:var(--surface-1)}
+h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--text-secondary);font-size:13px}
+.status{margin-left:auto;font-size:12.5px;color:var(--text-muted);display:flex;gap:10px;align-items:center}
+button{font:inherit;font-size:12.5px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-primary);border-radius:6px;padding:4px 10px;cursor:pointer}
+button:hover{border-color:var(--text-muted)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:calc(100vh - 54px)}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+#mapwrap{position:relative;background:var(--sea);overflow:hidden}
+#map{display:block;width:100%;height:calc(100vh - 54px);min-height:560px}
+@media (max-width:900px){#map{height:78vh}}
+.zone{stroke:var(--zone-stroke);stroke-width:1.6;cursor:pointer;transition:fill .6s}
+.zone:hover,.zone.sel{stroke:var(--text-primary);stroke-width:2.4}
+.abroad{fill:var(--land-abroad);stroke:none}
+.ukbase{fill:var(--land-abroad)}
+.zlabel{font-size:19px;fill:var(--text-secondary);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--surface-1);stroke-width:4px;stroke-linejoin:round;font-weight:500}
+.flow{fill:none;stroke:var(--flow);stroke-linecap:round;opacity:.85}
+.flowanim{fill:none;stroke:var(--surface-1);stroke-linecap:round;stroke-dasharray:1 26;animation:dash linear infinite}
+.icflow{stroke:var(--flow-ic)}
+@keyframes dash{to{stroke-dashoffset:-27}}
+.flabel{font-size:19px;font-weight:600;fill:var(--text-primary);text-anchor:middle;paint-order:stroke;stroke:var(--surface-1);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.iclabel{font-size:18px;font-weight:500;fill:var(--text-secondary);paint-order:stroke;stroke:var(--sea);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.hit{fill:none;stroke:transparent;cursor:default}
+.plant{stroke:var(--surface-1);stroke-width:.8;opacity:.9}
+.hide-plants .plant{display:none}
+.hide-labels .flabel{display:none}
+#tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 18px rgba(0,0,0,.12);max-width:260px;display:none;z-index:5}
+#tip b{font-weight:600}
+#tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--text-secondary)}
+#tip .r span:last-child{color:var(--text-primary);font-variant-numeric:tabular-nums}
+.legend{position:absolute;left:12px;bottom:12px;background:color-mix(in srgb,var(--surface-1) 92%,transparent);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12px;color:var(--text-secondary);max-width:250px}
+.legend .ramp{height:10px;border-radius:3px;background:linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos));margin:4px 0 2px}
+.legend .ends{display:flex;justify-content:space-between;font-size:11px}
+.legend .row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.toggles{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px;background:color-mix(in srgb,var(--surface-1) 92%,transparent);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.toggles label{display:flex;gap:6px;align-items:center;cursor:pointer;color:var(--text-secondary)}
+aside{background:var(--surface-1);border-left:1px solid var(--border);padding:16px 18px;overflow:auto;max-height:calc(100vh - 54px)}
+@media (max-width:900px){aside{max-height:none;border-left:0;border-top:1px solid var(--border)}}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.tile{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.tile .k{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tile .n{font-size:11.5px;color:var(--text-secondary)}
+h2{font-size:14px;margin:16px 0 6px;font-weight:650}
+h3{font-size:12.5px;margin:12px 0 4px;color:var(--text-secondary);font-weight:600}
+.stack{display:flex;height:16px;border-radius:4px;overflow:hidden;gap:2px;background:var(--surface-1)}
+.stack div{height:100%}
+.stack div:first-child{border-radius:4px 0 0 4px}.stack div:last-child{border-radius:0 4px 4px 0}
+.keys{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--text-secondary)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.bars .b{display:grid;grid-template-columns:130px 1fr 42px;align-items:center;gap:8px;font-size:12.5px;margin:3px 0}
+.bars .b .lab{color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars .b .trk{height:9px;background:var(--div-mid);border-radius:0 4px 4px 0}
+.bars .b .fill{height:100%;background:var(--text-secondary);border-radius:0 4px 4px 0}
+.bars .b .val{text-align:right;font-variant-numeric:tabular-nums}
+.hint{color:var(--text-muted);font-size:12.5px}
+details{margin-top:16px;border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text-secondary)}
+summary{cursor:pointer;color:var(--text-primary);font-weight:600}
+details p,details li{margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+td,th{padding:3px 4px;border-bottom:1px solid var(--border);text-align:left}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+a{color:var(--div-neg)}
+.err{color:#d03b3b}
+</style>
+</head>
+<body>
+<header>
+  <h1>Britain's electricity – where it's made, where it flows</h1>
+  <span class="sub">Live, indicative: a 14-zone model driven by Elexon and NESO data</span>
+  <span class="status"><span id="stamp">Loading…</span><button id="refresh" type="button">Refresh</button></span>
+</header>
+<main>
+  <div id="mapwrap">
+    <svg id="map" role="img" aria-label="Map of Great Britain showing estimated power flows between regions"></svg>
+    <div class="toggles">
+      <label><input type="checkbox" id="tPlants" checked> Power stations</label>
+      <label><input type="checkbox" id="tLabels" checked> Flow values</label>
+    </div>
+    <div class="legend">
+      <div><b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)</div>
+      <div class="ramp"></div>
+      <div class="ends"><span>importing</span><span>balanced</span><span>exporting</span></div>
+      <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow)" stroke-width="4" stroke-linecap="round"/></svg>inter-regional flow (width ∝ MW)</div>
+      <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
+      <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
+    </div>
+    <div id="tip"></div>
+  </div>
+  <aside>
+    <div class="tiles" id="tiles"></div>
+    <h2>Britain's supply right now</h2>
+    <div class="stack" id="natstack"></div>
+    <div class="keys" id="natkeys"></div>
+    <div id="zonepanel"><h2>Pick a region</h2><p class="hint">Click a region on the map to see an estimate of where its electricity is coming from.</p></div>
+    <h2>Flows across the main boundaries</h2>
+    <div id="flowtable"></div>
+    <details>
+      <summary>How this is worked out, and its limits</summary>
+      <p><b>Supply by place.</b> Every unit in the Balancing Mechanism reports a Physical Notification (its planned output, minute by minute). Where the system operator has instructed a unit to change (a bid-offer acceptance, e.g. curtailing Scottish wind), the accepted level is used instead. Units are located from the open <a href="https://github.com/OSUKED/Power-Station-Dictionary" target="_blank" rel="noopener">Power Station Dictionary</a>, supplemented by hand for newer plant; offshore wind is assigned to the region where it lands. These outputs are scaled so the total matches Elexon's 5-minute metered generation (FUELINST).</p>
+      <p><b>Small, local generation.</b> NESO's embedded wind and solar estimates (national totals) are shared between regions in proportion to an indicative capacity distribution.</p>
+      <p><b>Demand by place.</b> National demand is everything generated plus net imports, less storage charging. It is shared between the 14 distribution areas using suppliers' own half-hourly demand notifications for each area, which gives a live regional shape.</p>
+      <p><b>Flows.</b> Each region's surplus or deficit is passed across a reduced 23-path network with a DC power-flow approximation, using rough transfer capabilities as weights. That gives a <i>pattern</i> of flow, not the flow on any real circuit. The Western HVDC link is treated as an ordinary path, although in reality it is set by the operator.</p>
+      <p><b>"Where does it come from?"</b> Power does not travel from one station to one customer. The breakdown uses <i>proportional sharing</i> (Bialek's flow tracing): at each region, incoming power is assumed to mix evenly before moving on. It is an accounting convention, not a measurement.</p>
+      <p><b>Check against NESO.</b> NESO publishes forecast day-ahead flows across major boundaries (before constraint actions). Scotland→England (B6/SCOTEX) is the most useful comparison: when the model shows less than that forecast, the gap is mostly curtailed Scottish wind.</p>
+      <p>Data: <a href="https://bmrs.elexon.co.uk/" target="_blank" rel="noopener">Elexon Insights (BMRS)</a> – FUELINST, PN, BOALF; <a href="https://www.neso.energy/data-portal" target="_blank" rel="noopener">NESO data portal</a> – embedded wind &amp; solar forecast, DNO licence-area boundaries. Built by Tim Daw, 2026.</p>
+    </details>
+  </aside>
+</main>
+<script>/*GEO*/</script>
+<script>/*MODEL*/</script>
+<script>
+(function(){
+const SVGNS='http://www.w3.org/2000/svg';
+const ELX='https://data.elexon.co.uk/bmrs/api/v1';
+const NESO_EMB='https://api.neso.energy/api/3/action/datastore_search?resource_id=db6c038f-98af-4570-ab60-24d71ebd0ae5&limit=8';
+const NESO_DA='https://api.neso.energy/api/3/action/datastore_search_sql?sql=';
+const svg=document.getElementById('map'), tip=document.getElementById('tip');
+const V=GEO.view; const VB=[-175,70,1000,1250];
+svg.setAttribute('viewBox',VB.join(' '));
+const FUELS=[['Wind','--f-wind'],['Gas','--f-gas'],['Nuclear','--f-nuclear'],['Solar','--f-solar'],['Hydro & storage','--f-hydro'],['Biomass','--f-biomass'],['Imports','--f-imports'],['Other','--f-other']];
+const fuelKey=f=>(f==='Hydro'||f==='Storage')?'Hydro & storage':f;
+const FCOL=Object.fromEntries(FUELS.map(([k,v])=>[k,`var(${v})`]));
+// node positions (km, view coords); tuned by hand for legibility
+const NODE={_P:[262,430],_N:[290,612],_F:[430,690],_G:[352,752],_M:[470,800],_D:[300,868],_E:[385,955],_B:[478,905],_A:[600,965],_K:[272,1010],_L:[262,1135],_H:[430,1080],_C:[532,1045],_J:[605,1110]};
+const ZN=Object.fromEntries(Object.entries(GEO.zones).map(([k,v])=>[k,v.name]));
+const IC_SHORT={INTFR:'IFA',INTIFA2:'IFA2',INTELEC:'ElecLink',INTNED:'BritNed',INTNEM:'Nemo',INTNSL:'North Sea Link',INTVKL:'Viking',INTIRL:'Moyle',INTEW:'East–West',INTGRNL:'Greenlink'};
+const el=(n,a={},p)=>{const e=document.createElementNS(SVGNS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const fmt=mw=>Math.abs(mw)>=1000?(mw/1000).toFixed(1)+' GW':Math.round(mw)+' MW';
+const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// ---------- static layers
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
+for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
+const zonePaths={};
+for(const [z,v] of Object.entries(GEO.zones)){
+  const p=el('path',{d:v.d,class:'zone','data-z':z,tabindex:0,role:'button','aria-label':v.name},gZones);
+  p.addEventListener('click',()=>select(z)); p.addEventListener('keydown',e=>{if(e.key==='Enter')select(z)});
+  p.addEventListener('mousemove',e=>showTip(e,zoneTip(z))); p.addEventListener('mouseleave',hideTip);
+  zonePaths[z]=p;
+}
+const SHORTLAB={_D:'Merseyside & N Wales',_N:'South Scotland',_P:'North Scotland'};
+const LOFF={_P:[-75,-30],_N:[75,-28],_F:[70,-12],_G:[-80,-18],_M:[80,30],_D:[-100,18],_E:[-62,45],_B:[45,-34],_A:[45,-30],_K:[-60,-30],_L:[-30,48],_H:[-15,50],_C:[-10,-24],_J:[48,42]};
+for(const [z,[x,y]] of Object.entries(NODE)){ const o=LOFF[z]||[0,-14]; const t=el('text',{x:x+o[0],y:y+o[1],class:'zlabel'},gLab); t.textContent=SHORTLAB[z]||ZN[z]; }
+
+// ---------- tooltip
+function showTip(e,html){ if(!html)return; tip.innerHTML=html; tip.style.display='block'; const r=document.getElementById('mapwrap').getBoundingClientRect(); let x=e.clientX-r.left+14,y=e.clientY-r.top+14; if(x+270>r.width)x-=290; if(y+160>r.height)y-=170; tip.style.left=x+'px'; tip.style.top=y+'px'; }
+function hideTip(){ tip.style.display='none'; }
+const row=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
+
+let R=null, selected=null, daRef=null;
+function zoneTip(z){ if(!R)return `<b>${ZN[z]}</b>`; const q=R.zones[z];
+  return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net)); }
+
+// ---------- data
+async function j(url){ const r=await fetch(url); if(!r.ok) throw new Error(r.status+' '+url.split('?')[0]); return r.json(); }
+async function load(){
+  document.getElementById('stamp').textContent='Updating…';
+  const now=new Date(), from=new Date(now-40*60000);
+  const fuel=await j(`${ELX}/datasets/FUELINST/stream?publishDateTimeFrom=${from.toISOString()}&publishDateTimeTo=${now.toISOString()}`);
+  if(!fuel.length) throw new Error('No FUELINST data');
+  const last=fuel.reduce((a,b)=>b.startTime>a.startTime?b:a);
+  const fi=fuel.filter(r=>r.startTime===last.startTime);
+  const sd=last.settlementDate, sp=last.settlementPeriod;
+  const spStart=Math.floor(Date.parse(last.startTime)/1800000)*1800000;
+  const t=Math.min(Date.now(),spStart+1800000-60000);
+  const [pn,boa,emb]=await Promise.all([
+    j(`${ELX}/balancing/physical/all?dataset=PN&settlementDate=${sd}&settlementPeriod=${sp}`),
+    j(`${ELX}/balancing/acceptances/all?settlementDate=${sd}&settlementPeriod=${sp}`),
+    j(NESO_EMB).catch(()=>null)]);
+  let ew=0,es=0;
+  if(emb){ const recs=emb.result.records; const m=recs.find(r=>r.SETTLEMENT_DATE.slice(0,10)===sd&&r.SETTLEMENT_PERIOD===sp)||recs[0]; ew=m.EMBEDDED_WIND_FORECAST; es=m.EMBEDDED_SOLAR_FORECAST; }
+  R=GBFlow.compute(GEO,{fuelinst:fi,pn:pn.data,boa:boa.data,emb:{wind:ew,solar:es},t});
+  R.time=new Date(last.startTime); R.sp=sp; R.sd=sd;
+  // NESO day-ahead boundary forecast for comparison (best effort)
+  daRef=null;
+  try{ const local=new Date(spStart).toLocaleString('sv-SE',{timeZone:'Europe/London'}).replace(' ','T');
+    const q=await j(NESO_DA+encodeURIComponent(`SELECT * from "38a18ec1-9e40-465d-93fb-301e80fd1352" WHERE "Date_ Time GMT_BST" = '${local}' AND "Constraint Group" = 'SCOTEX'`));
+    const rec=q.result.records[0]; if(rec) daRef={flow:rec.Flow_MW,limit:rec.Limit_MW}; }catch(e){}
+  draw();
+  document.getElementById('stamp').textContent=`Data for ${R.time.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'})} UK time · settlement period ${sp} · updates every 5 min`;
+}
+function run(){ load().catch(e=>{ console.error(e); document.getElementById('stamp').innerHTML=`<span class="err">Could not load live data (${e.message}).</span>`; }); }
+
+// ---------- drawing
+function divColor(r){ // r in [-1,1]
+  const mix=(a,b,t)=>`color-mix(in oklab, ${b} ${Math.round(t*100)}%, ${a})`;
+  const c=Math.max(-1,Math.min(1,r)); const k=Math.sqrt(Math.abs(c));
+  return c<0?mix('var(--div-mid)','var(--div-neg)',k):mix('var(--div-mid)','var(--div-pos)',k);
+}
+function curve(a,b,bend=0.12){ const [x1,y1]=a,[x2,y2]=b; const mx=(x1+x2)/2,my=(y1+y2)/2, dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1; return {d:`M${x1},${y1} Q${mx-dy*bend},${my+dx*bend} ${x2},${y2}`, mx:mx-dy*bend/2, my:my+dx*bend/2, nx:-dy/L*Math.sign(bend||1), ny:dx/L*Math.sign(bend||1)}; }
+function clipToView([x1,y1],[x2,y2]){ const xmin=VB[0]+8,xmax=VB[0]+VB[2]-8,ymin=VB[1]+8,ymax=VB[1]+VB[3]-8; let t=1;
+  if(x2>xmax)t=Math.min(t,(xmax-x1)/(x2-x1)); if(x2<xmin)t=Math.min(t,(xmin-x1)/(x2-x1)); if(y2<ymin)t=Math.min(t,(ymin-y1)/(y2-y1)); if(y2>ymax)t=Math.min(t,(ymax-y1)/(y2-y1));
+  return [x1+(x2-x1)*t,y1+(y2-y1)*t]; }
+const width=mw=>2+Math.min(16,Math.abs(mw)/420);
+function arrowHead(g,path,mw,cls){ // chevron at the middle of a path, pointing along flow
+  const L=path.getTotalLength(); const p=path.getPointAtLength(L*0.55), q=path.getPointAtLength(L*0.55+1);
+  const ang=Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; const s=6+width(mw)*0.9;
+  el('path',{d:`M${-s},${-s} L${s*0.6},0 L${-s},${s}`,transform:`translate(${p.x},${p.y}) rotate(${ang})`,fill:'none',stroke:cls==='ic'?'var(--flow-ic)':'var(--flow)','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'},g);
+}
+function draw(){
+  for(const [z,p] of Object.entries(zonePaths)){ const q=R.zones[z]; p.style.fill=divColor(q.net/Math.max(q.demand,300)); }
+  gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML='';
+  // plants
+  const maxR=19;
+  for(const u of R.units){ if(u.mw<=5||u.x==null)continue; const r=Math.max(1.6,Math.sqrt(u.mw)/Math.sqrt(2000)*maxR);
+    const c=el('circle',{cx:u.x,cy:u.y,r,class:'plant',fill:FCOL[fuelKey(u.fuel)]},gPlants);
+    c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b>`+row(fuelKey(u.fuel),fmt(u.mw))+row('Unit',u.u)+row('Region',ZN[u.z]))); c.addEventListener('mouseleave',hideTip); }
+  // biggest first so small circles stay on top
+  [...gPlants.children].sort((a,b)=>b.getAttribute('r')-a.getAttribute('r')).forEach(c=>gPlants.appendChild(c));
+  // interconnectors
+  const icOff={INTELEC:[0,9],INTFR:[0,-6]}; const byC={};
+  for(const c of R.ics){ const o=icOff[c.key]||[0,0]; const land=[c.x1+o[0],c.y1+o[1]]; const far=clipToView(land,[c.x2+o[0],c.y2+o[1]]);
+    const a=c.mw>=0?far:land, b=c.mw>=0?land:far; const cv=curve(a,b,0.05);
+    const g=el('g',{},gIC);
+    if(Math.abs(c.mw)>=1){ el('path',{d:cv.d,class:'flow icflow','stroke-width':width(c.mw)},g);
+      const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2,width(c.mw)*0.45)},g); an.style.animationDuration=Math.max(0.5,6-Math.abs(c.mw)/250)+'s';
+      arrowHead(g,el('path',{d:cv.d,fill:'none'},g),c.mw,'ic'); }
+    else el('path',{d:cv.d,class:'flow icflow','stroke-width':1.5,'stroke-dasharray':'3 5',opacity:.5},g);
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':18},g);
+    hit.addEventListener('mousemove',e=>showTip(e,`<b>${c.name}</b> (${c.country})`+row(c.mw>=0?'Import to GB':'Export from GB',fmt(Math.abs(c.mw)))+row('Lands in',ZN[c.zone])));
+    hit.addEventListener('mouseleave',hideTip);
+    (byC[c.country] ||= {mw:0,pts:[],land:[]}); byC[c.country].mw+=c.mw; byC[c.country].pts.push(far); byC[c.country].land.push(land);
+  }
+  for(const [name,o] of Object.entries(byC)){ const lx=o.pts.reduce((s,p)=>s+p[0],0)/o.pts.length, ly=o.pts.reduce((s,p)=>s+p[1],0)/o.pts.length, ax=o.land[0][0], ay=o.land[0][1];
+    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(VB[0]+6,Math.min(VB[0]+VB[2]-6,lx+(lx>ax?8:-8))),y:Math.min(VB[1]+VB[3]-10,ly+(ly>ay?22:-8)),class:'iclabel','text-anchor':ly>VB[1]+VB[3]-40?'middle':anchor},gIC);
+    t.textContent=o.mw>=0?`${name} → ${fmt(o.mw)}`:`${name} ← ${fmt(-o.mw)}`;
+    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=VB[0]+VB[2]-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16); } } }
+  // inter-zonal flows
+  for(const f of R.flows){ if(Math.abs(f.mw)<20)continue; const a=NODE[f.mw>=0?f.a:f.b], b=NODE[f.mw>=0?f.b:f.a];
+    const cv=curve(a,b,0.1); const g=el('g',{},gFlow);
+    el('path',{d:cv.d,class:'flow','stroke-width':width(f.mw)},g);
+    const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2,width(f.mw)*0.45)},g); an.style.animationDuration=Math.max(0.4,6-Math.abs(f.mw)/450)+'s';
+    arrowHead(g,el('path',{d:cv.d,fill:'none'},g),f.mw);
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':20},g);
+    const from=f.mw>=0?f.a:f.b,to=f.mw>=0?f.b:f.a;
+    hit.addEventListener('mousemove',e=>showTip(e,`<b>${f.label}</b>`+row(`${ZN[from]} → ${ZN[to]}`,fmt(Math.abs(f.mw)))));
+    hit.addEventListener('mouseleave',hideTip);
+    if(Math.abs(f.mw)>=400){ const off=14+width(f.mw)/2; const t=el('text',{x:cv.mx+cv.nx*off,y:cv.my+cv.ny*off+6,class:'flabel'},gFlow); t.textContent=(Math.abs(f.mw)/1000).toFixed(1); }
+  }
+  for(const z in NODE) el('circle',{cx:NODE[z][0],cy:NODE[z][1],r:4.5,fill:'var(--flow)'},gFlow);
+  panel();
+}
+function stack(container,keys,parts){ // parts: {key: mw}
+  const tot=Object.values(parts).reduce((a,b)=>a+b,0)||1; const s=document.getElementById(container+'stack'), k=document.getElementById(container+'keys');
+  s.innerHTML=''; k.innerHTML='';
+  for(const [name] of FUELS){ const v=parts[name]||0; if(v/tot<0.004)continue; const d=document.createElement('div'); d.style.width=(100*v/tot)+'%'; d.style.background=FCOL[name]; d.title=`${name}: ${fmt(v)} (${(100*v/tot).toFixed(0)}%)`; s.appendChild(d);
+    k.insertAdjacentHTML('beforeend',`<span><i class="sw" style="background:${FCOL[name]}"></i>${name} ${(100*v/tot).toFixed(0)}%</span>`); }
+}
+function panel(){
+  const b6=R.flows.filter(f=>['_F','_G','_D'].includes(f.b)&&f.a==='_N').reduce((s,f)=>s+f.mw,0);
+  const nat={}; for(const [k,v] of Object.entries(R.nat)) nat[fuelKey(k)]=(nat[fuelKey(k)]||0)+v; if(R.icNet>0) nat.Imports=R.icNet;
+  document.getElementById('tiles').innerHTML=
+    `<div class="tile"><div class="k">Demand (est.)</div><div class="v">${(R.demand/1000).toFixed(1)} GW</div><div class="n">incl. embedded wind &amp; solar</div></div>`+
+    `<div class="tile"><div class="k">Net imports</div><div class="v">${fmtS(R.icNet)}</div><div class="n">${R.ics.filter(c=>c.mw>0).length} of ${R.ics.length} links importing</div></div>`+
+    `<div class="tile"><div class="k">Scotland → England</div><div class="v">${(b6/1000).toFixed(1)} GW</div><div class="n">${daRef?`NESO day-ahead forecast ${(daRef.flow/1000).toFixed(1)} GW (limit ${(daRef.limit/1000).toFixed(1)})`:'model estimate, boundary B6'}</div></div>`+
+    `<div class="tile"><div class="k">Wind share</div><div class="v">${(100*(nat.Wind||0)/Object.values(nat).reduce((a,b)=>a+b,0)).toFixed(0)}%</div><div class="n">${fmt(nat.Wind||0)} incl. embedded</div></div>`;
+  stack('nat',FUELS,nat);
+  // boundary table
+  const rows=R.flows.slice().sort((a,b)=>Math.abs(b.mw)-Math.abs(a.mw)).slice(0,10).map(f=>{const from=f.mw>=0?f.a:f.b,to=f.mw>=0?f.b:f.a;return `<tr><td>${ZN[from]} → ${ZN[to]}<div class="hint">${f.label}</div></td><td class="num">${fmt(Math.abs(f.mw))}</td></tr>`}).join('');
+  document.getElementById('flowtable').innerHTML=`<table><thead><tr><th>Largest estimated flows</th><th class="num">Flow</th></tr></thead><tbody>${rows}</tbody></table>`;
+  if(selected) zonePanel(selected);
+}
+function select(z){ selected=z; for(const [k,p] of Object.entries(zonePaths)) p.classList.toggle('sel',k===z); if(R) zonePanel(z); }
+function zonePanel(z){
+  const q=R.zones[z], mix=R.mix[z], fm=R.fmix[z];
+  const label=k=>k.startsWith('_')?(k===z?`${ZN[k]} (local)`:ZN[k]):`${IC_SHORT[k]} (${GEO.ics.find(c=>c.key===k).country})`;
+  const items=Object.entries(mix).filter(([,v])=>v>0.005).sort((a,b)=>b[1]-a[1]);
+  const top=items.slice(0,9), rest=items.slice(9).reduce((s,[,v])=>s+v,0);
+  if(rest>0.005) top.push(['other',rest]);
+  const mx=top[0]?top[0][1]:1;
+  const bars=top.map(([k,v])=>`<div class="b"><span class="lab">${k==='other'?'Elsewhere':label(k)}</span><span class="trk" style="background:none"><div class="fill" style="width:${100*v/mx}%;${k.startsWith('INT')?'background:var(--f-imports)':''}"></div></span><span class="val">${(100*v).toFixed(0)}%</span></div>`).join('');
+  const fuels={}; for(const [k,v] of Object.entries(fm)) fuels[fuelKey(k)]=(fuels[fuelKey(k)]||0)+v;
+  document.getElementById('zonepanel').innerHTML=`<h2>${ZN[z]}</h2>
+    <div class="tiles" style="margin-bottom:6px">
+      <div class="tile"><div class="k">Generation</div><div class="v">${fmt(q.gen+q.embW+q.embS)}</div><div class="n">${q.ic>0?`+ ${fmt(q.ic)} landing from abroad`:'within the region'}</div></div>
+      <div class="tile"><div class="k">Demand (est.)</div><div class="v">${fmt(q.demand)}</div><div class="n">${q.net>=0?'exporting':'importing'} ${fmt(Math.abs(q.net))}</div></div></div>
+    <h3>Where its electricity comes from (traced)</h3><div class="bars">${bars}</div>
+    <h3>…and by source</h3><div class="stack" id="zstack"></div><div class="keys" id="zkeys"></div>`;
+  stack('z',FUELS,fuels);
+}
+document.getElementById('refresh').onclick=run;
+document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
+document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
+svg.addEventListener('click',e=>{ if(!e.target.classList.contains('zone')){} });
+run(); setInterval(run,5*60000);
+select('_C');
+})();
+</script>
+</body>
+</html>
