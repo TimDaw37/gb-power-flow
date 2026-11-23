@@ -10,6 +10,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 
 - Animated flows between the 14 DNO areas, and across each interconnector.
 - Regions can be coloured by export/import balance, by the carbon intensity of their supply, or by their share of the selected region's supply.
+- Zoom and pan: mouse wheel, double-click, drag, pinch on touch screens, the + / − / ⤢ buttons, or the + − 0 keys. Lines, dots and text keep their on-screen size, and stations are named once zoomed in.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.

@@ -60,21 +60,28 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 #mapwrap{position:relative;background:var(--sea);overflow:hidden}
 #map{display:block;width:100%;height:calc(100vh - 54px);min-height:560px}
 @media (max-width:900px){#map{height:78vh}}
-.zone{stroke:var(--zone-stroke);stroke-width:1.6;cursor:pointer;transition:fill .6s}
-.zone:hover,.zone.sel{stroke:var(--text-primary);stroke-width:2.4}
+.zone{stroke:var(--zone-stroke);stroke-width:calc(1.6px / var(--k,1));cursor:pointer;transition:fill .6s}
+.zone:hover,.zone.sel{stroke:var(--text-primary);stroke-width:calc(2.4px / var(--k,1))}
 .abroad{fill:var(--land-abroad);stroke:none}
 .ukbase{fill:var(--land-abroad)}
-.zlabel{font-size:19px;fill:var(--text-secondary);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--surface-1);stroke-width:4px;stroke-linejoin:round;font-weight:500}
+.zlabel{font-size:calc(19px / var(--k,1));fill:var(--text-secondary);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;font-weight:500}
 .flow{fill:none;stroke:var(--flow);stroke-linecap:round;opacity:.85}
 .flowanim{fill:none;stroke:var(--surface-1);stroke-linecap:round;stroke-dasharray:1 26;animation:dash linear infinite}
 .icflow{stroke:var(--flow-ic)}
 @keyframes dash{to{stroke-dashoffset:-27}}
-.flabel{font-size:19px;font-weight:600;fill:var(--text-primary);text-anchor:middle;paint-order:stroke;stroke:var(--surface-1);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
-.iclabel{font-size:18px;font-weight:500;fill:var(--text-secondary);paint-order:stroke;stroke:var(--sea);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.flabel{font-size:calc(19px / var(--k,1));font-weight:600;fill:var(--text-primary);text-anchor:middle;paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;pointer-events:none}
+.iclabel{font-size:calc(18px / var(--k,1));font-weight:500;fill:var(--text-secondary);paint-order:stroke;stroke:var(--sea);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;pointer-events:none}
 .hit{fill:none;stroke:transparent;cursor:default}
-.plant{stroke:var(--surface-1);stroke-width:.8;opacity:.9}
+.plant{stroke:var(--surface-1);stroke-width:calc(.8px / var(--k,1));opacity:.9}
 .hide-plants .plant{display:none}
 .hide-labels .flabel{display:none}
+.hide-plants .plabel{display:none}
+.plabel{font-size:calc(13px / var(--k,1));fill:var(--text-primary);paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(3px / var(--k,1));stroke-linejoin:round;pointer-events:none}
+#map{touch-action:pan-y;cursor:default}#map.zoomed{cursor:grab}#map.dragging{cursor:grabbing}
+.zoomctl{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface-1)}
+.zoomctl button{border:0;border-radius:0;width:36px;height:36px;font-size:18px;line-height:1;padding:0;background:var(--surface-1)}
+.zoomctl button+button{border-top:1px solid var(--border)}
+.zoomctl button:hover{background:var(--surface-2)}
 #tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 18px rgba(0,0,0,.12);max-width:260px;display:none;z-index:5}
 #tip b{font-weight:600}
 #tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--text-secondary)}
@@ -134,6 +141,7 @@ a{color:var(--div-neg)}
 <main>
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="Map of Great Britain showing estimated power flows between regions"></svg>
+    <div class="zoomctl" role="group" aria-label="Map zoom"><button type="button" id="zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="zreset" aria-label="Reset view" title="Reset view (0)" style="font-size:15px">⤢</button></div>
     <div class="toggles">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
@@ -185,6 +193,41 @@ const NESO_DA='https://api.neso.energy/api/3/action/datastore_search_sql?sql=';
 const svg=document.getElementById('map'), tip=document.getElementById('tip');
 const V=GEO.view; const VB=[-175,70,1000,1250];
 svg.setAttribute('viewBox',VB.join(' '));
+// ---------- zoom & pan (viewBox based; marks keep their on-screen size)
+const VIEW={x:VB[0],y:VB[1],w:VB[2],h:VB[3]}; let rafId=0;
+function applyView(){
+  const minW=VB[2]/10; VIEW.w=Math.max(minW,Math.min(VB[2],VIEW.w)); VIEW.h=VB[3]*VIEW.w/VB[2];
+  VIEW.x=Math.max(VB[0]-VIEW.w*0.3,Math.min(VB[0]+VB[2]-VIEW.w*0.7,VIEW.x)); VIEW.y=Math.max(VB[1]-VIEW.h*0.3,Math.min(VB[1]+VB[3]-VIEW.h*0.7,VIEW.y));
+  if(VIEW.w>=VB[2]-0.5){ VIEW.x=VB[0]; VIEW.y=VB[1]; }
+  svg.setAttribute('viewBox',`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`);
+  K=VB[2]/VIEW.w; svg.style.setProperty('--k',K); svg.classList.toggle('zoomed',K>1.01);
+  svg.style.touchAction=K>1.01?'none':'pan-y';
+  cancelAnimationFrame(rafId); rafId=requestAnimationFrame(()=>{ if(R) drawLayers(); });
+}
+function svgPt(cx,cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function unitsPerPx(){ const r=svg.getBoundingClientRect(); return Math.max(VIEW.w/r.width,VIEW.h/r.height); }
+function zoomAt(f,cx,cy){ const r=svg.getBoundingClientRect(); if(cx==null){ cx=r.left+r.width/2; cy=r.top+r.height/2; }
+  const p=svgPt(cx,cy), nw=Math.max(VB[2]/10,Math.min(VB[2],VIEW.w/f)), s=nw/VIEW.w;
+  VIEW.x=p.x-(p.x-VIEW.x)*s; VIEW.y=p.y-(p.y-VIEW.y)*s; VIEW.w=nw; applyView(); }
+svg.addEventListener('wheel',e=>{ e.preventDefault(); hideTip(); zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1?0.05:0.0018)),e.clientX,e.clientY); },{passive:false});
+svg.addEventListener('dblclick',e=>{ e.preventDefault(); zoomAt(e.shiftKey?0.5:2,e.clientX,e.clientY); });
+const ptrs=new Map(); let drag=null, pinch=null, suppressClick=false;
+const mid=()=>{ const [a,b]=[...ptrs.values()]; return {x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)}; };
+svg.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){ drag={x:e.clientX,y:e.clientY,vx:VIEW.x,vy:VIEW.y,moved:false}; }
+  else if(ptrs.size===2){ drag=null; pinch=mid(); } });
+svg.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId))return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size===2){ const m=mid(); if(pinch.d>0&&m.d>0) zoomAt(m.d/pinch.d,m.x,m.y); const u=unitsPerPx(); VIEW.x-=(m.x-pinch.x)*u; VIEW.y-=(m.y-pinch.y)*u; applyView(); pinch=m; suppressClick=true; return; }
+  if(drag&&K>1.01){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+    if(!drag.moved&&Math.hypot(dx,dy)>4){ drag.moved=true; svg.classList.add('dragging'); try{ svg.setPointerCapture(e.pointerId); }catch(_){} hideTip(); }
+    if(drag.moved){ const u=unitsPerPx(); VIEW.x=drag.vx-dx*u; VIEW.y=drag.vy-dy*u; applyView(); } } });
+const endPtr=e=>{ if(drag&&drag.moved) suppressClick=true; ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null; if(!ptrs.size){ drag=null; svg.classList.remove('dragging'); } };
+svg.addEventListener('pointerup',endPtr); svg.addEventListener('pointercancel',endPtr);
+svg.addEventListener('click',e=>{ if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick=false; } },true);
+document.getElementById('zin').onclick=()=>zoomAt(1.6);
+document.getElementById('zout').onclick=()=>zoomAt(1/1.6);
+document.getElementById('zreset').onclick=()=>{ VIEW.x=VB[0]; VIEW.y=VB[1]; VIEW.w=VB[2]; applyView(); };
+document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='+'||e.key==='=')zoomAt(1.6); if(e.key==='-'||e.key==='_')zoomAt(1/1.6); if(e.key==='0')document.getElementById('zreset').click(); });
 const fitMap=()=>svg.setAttribute('preserveAspectRatio',innerWidth>900?'xMaxYMid meet':'xMidYMid meet'); fitMap(); addEventListener('resize',fitMap);
 const FUELS=[['Wind','--f-wind'],['Gas','--f-gas'],['Nuclear','--f-nuclear'],['Solar','--f-solar'],['Hydro & storage','--f-hydro'],['Biomass','--f-biomass'],['Imports','--f-imports'],['Other','--f-other']];
 const fuelKey=f=>(f==='Hydro'||f==='Storage')?'Hydro & storage':f;
@@ -294,11 +337,12 @@ function curve(a,b,bend=0.12){ const [x1,y1]=a,[x2,y2]=b; const mx=(x1+x2)/2,my=
 function clipToView([x1,y1],[x2,y2]){ const xmin=VB[0]+8,xmax=VB[0]+VB[2]-8,ymin=VB[1]+8,ymax=VB[1]+VB[3]-8; let t=1;
   if(x2>xmax)t=Math.min(t,(xmax-x1)/(x2-x1)); if(x2<xmin)t=Math.min(t,(xmin-x1)/(x2-x1)); if(y2<ymin)t=Math.min(t,(ymin-y1)/(y2-y1)); if(y2>ymax)t=Math.min(t,(ymax-y1)/(y2-y1));
   return [x1+(x2-x1)*t,y1+(y2-y1)*t]; }
-const width=mw=>2+Math.min(16,Math.abs(mw)/420);
+let K=1;
+const width=mw=>(2+Math.min(16,Math.abs(mw)/420))/K;
 function arrowHead(g,path,mw,cls){ // chevron at the middle of a path, pointing along flow
   const L=path.getTotalLength(); const p=path.getPointAtLength(L*0.55), q=path.getPointAtLength(L*0.55+1);
-  const ang=Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; const s=6+width(mw)*0.9;
-  el('path',{d:`M${-s},${-s} L${s*0.6},0 L${-s},${s}`,transform:`translate(${p.x},${p.y}) rotate(${ang})`,fill:'none',stroke:cls==='ic'?'var(--flow-ic)':'var(--flow)','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'},g);
+  const ang=Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; const s=6/K+width(mw)*0.9;
+  el('path',{d:`M${-s},${-s} L${s*0.6},0 L${-s},${s}`,transform:`translate(${p.x},${p.y}) rotate(${ang})`,fill:'none',stroke:cls==='ic'?'var(--flow-ic)':'var(--flow)','stroke-width':2.4/K,'stroke-linecap':'round','stroke-linejoin':'round'},g);
 }
 // Approximate emission factors (gCO2/kWh), after NESO Carbon Intensity API methodology
 const EF={Wind:0,Solar:0,Nuclear:0,Hydro:0,Storage:0,Biomass:120,Gas:394,Other:300};
@@ -318,48 +362,57 @@ function colourZones(){
   else if(mode==='carbon'){ lgT.innerHTML='<b style="color:var(--text-primary)">Carbon intensity</b> of each region’s supply'; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--f-gas))'; lgE.innerHTML='<span>0</span><span>150</span><span>300+ g/kWh</span>'; }
   else { lgT.innerHTML=`<b style="color:var(--text-primary)">Share of ${ZN[selected]}’s supply</b> by region of origin`; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--div-neg))'; lgE.innerHTML='<span>0%</span><span>12%</span><span>50%+</span>'; }
 }
-function draw(){
-  colourZones();
+function draw(){ colourZones(); drawLayers(); panel(); }
+function drawLayers(){
   gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML='';
   // plants
   const maxR=19;
-  for(const u of R.units){ if(u.mw<=5||u.x==null)continue; const r=Math.max(1.6,Math.sqrt(u.mw)/Math.sqrt(2000)*maxR);
+  for(const u of R.units){ if(u.mw<=5||u.x==null)continue; const r=Math.max(1.6,Math.sqrt(u.mw)/Math.sqrt(2000)*maxR)/Math.sqrt(K);
     const c=el('circle',{cx:u.x,cy:u.y,r,class:'plant',fill:FCOL[fuelKey(u.fuel)]},gPlants);
     c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b>`+row(fuelKey(u.fuel),fmt(u.mw))+row('Unit',u.u)+row('Region',ZN[u.z]))); c.addEventListener('mouseleave',hideTip); }
   // biggest first so small circles stay on top
   [...gPlants.children].sort((a,b)=>b.getAttribute('r')-a.getAttribute('r')).forEach(c=>gPlants.appendChild(c));
+  if(K>=2.5){ // name the larger stations once zoomed in (one label per site)
+    const seen=new Set(), sites={};
+    for(const u of R.units){ if(u.mw<=5||u.x==null)continue; const k=u.name; (sites[k] ||= {x:u.x,y:u.y,mw:0}).mw+=u.mw; }
+    const minMW=K>=5?20:K>=3.5?60:150;
+    const boxes=[];   // greedy placement, biggest stations first; skip any label that would overlap one already placed
+    for(const [n,s] of Object.entries(sites).sort((a,b)=>b[1].mw-a[1].mw)){ if(s.mw<minMW)continue; const r=Math.max(1.6,Math.sqrt(s.mw)/Math.sqrt(2000)*maxR)/Math.sqrt(K);
+      const txt=`${n.split(',')[0].replace(/ \(.*\)$/,'').replace(/ (Generator|Power Station|Windfarm|Wind Farm|Offshore Wind Farm|Offshore Windfarm)$/i,'')} ${fmt(s.mw)}`;
+      const x=s.x+r+3/K, y=s.y+4/K, w=txt.length*7/K, h=15/K;
+      if(boxes.some(q=>x<q[0]+q[2]&&q[0]<x+w&&y-h<q[1]&&q[1]-q[3]<y)) continue; boxes.push([x,y,w,h]);
+      const t=el('text',{x,y,class:'plabel'},gPlants); t.textContent=txt; } }
   // interconnectors
   const icOff={INTELEC:[0,9],INTFR:[0,-6]}; const byC={};
   for(const c of R.ics){ const o=icOff[c.key]||[0,0]; const land=[c.x1+o[0],c.y1+o[1]]; const far=clipToView(land,[c.x2+o[0],c.y2+o[1]]);
     const a=c.mw>=0?far:land, b=c.mw>=0?land:far; const cv=curve(a,b,0.05);
     const g=el('g',{},gIC);
     if(Math.abs(c.mw)>=1){ el('path',{d:cv.d,class:'flow icflow','stroke-width':width(c.mw)},g);
-      const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2,width(c.mw)*0.45)},g); an.style.animationDuration=Math.max(0.5,6-Math.abs(c.mw)/250)+'s';
+      const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2/K,width(c.mw)*0.45)},g); an.style.animationDuration=Math.max(0.5,6-Math.abs(c.mw)/250)*K+'s';
       arrowHead(g,el('path',{d:cv.d,fill:'none'},g),c.mw,'ic'); }
-    else el('path',{d:cv.d,class:'flow icflow','stroke-width':1.5,'stroke-dasharray':'3 5',opacity:.5},g);
-    const hit=el('path',{d:cv.d,class:'hit','stroke-width':18},g);
+    else el('path',{d:cv.d,class:'flow icflow','stroke-width':1.5/K,'stroke-dasharray':`${3/K} ${5/K}`,opacity:.5},g);
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':18/K},g);
     hit.addEventListener('mousemove',e=>showTip(e,`<b>${c.name}</b> (${c.country})`+row(c.mw>=0?'Import to GB':'Export from GB',fmt(Math.abs(c.mw)))+row('Lands in',ZN[c.zone])));
     hit.addEventListener('mouseleave',hideTip);
     (byC[c.country] ||= {mw:0,pts:[],land:[]}); byC[c.country].mw+=c.mw; byC[c.country].pts.push(far); byC[c.country].land.push(land);
   }
   for(const [name,o] of Object.entries(byC)){ const lx=o.pts.reduce((s,p)=>s+p[0],0)/o.pts.length, ly=o.pts.reduce((s,p)=>s+p[1],0)/o.pts.length, ax=o.land[0][0], ay=o.land[0][1];
-    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(VB[0]+6,Math.min(VB[0]+VB[2]-6,lx+(lx>ax?8:-8))),y:Math.min(VB[1]+VB[3]-10,ly+(ly>ay?22:-8)),class:'iclabel','text-anchor':ly>VB[1]+VB[3]-40?'middle':anchor},gIC);
+    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(VB[0]+6,Math.min(VB[0]+VB[2]-6,lx+(lx>ax?8:-8)/K)),y:Math.min(VB[1]+VB[3]-10,ly+(ly>ay?22:-8)/K),class:'iclabel','text-anchor':ly>VB[1]+VB[3]-40?'middle':anchor},gIC);
     t.textContent=o.mw>=0?`${name} → ${fmt(o.mw)}`:`${name} ← ${fmt(-o.mw)}`;
-    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=VB[0]+VB[2]-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16); } } }
+    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=VB[0]+VB[2]-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16/K); } } }
   // inter-zonal flows
   for(const f of R.flows){ if(Math.abs(f.mw)<20)continue; const a=NODE[f.mw>=0?f.a:f.b], b=NODE[f.mw>=0?f.b:f.a];
     const cv=curve(a,b,0.1); const g=el('g',{},gFlow);
     el('path',{d:cv.d,class:'flow','stroke-width':width(f.mw)},g);
-    const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2,width(f.mw)*0.45)},g); an.style.animationDuration=Math.max(0.4,6-Math.abs(f.mw)/450)+'s';
+    const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2/K,width(f.mw)*0.45)},g); an.style.animationDuration=Math.max(0.4,6-Math.abs(f.mw)/450)*K+'s';
     arrowHead(g,el('path',{d:cv.d,fill:'none'},g),f.mw);
-    const hit=el('path',{d:cv.d,class:'hit','stroke-width':20},g);
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':20/K},g);
     const from=f.mw>=0?f.a:f.b,to=f.mw>=0?f.b:f.a;
     hit.addEventListener('mousemove',e=>showTip(e,`<b>${f.label}</b>`+row(`${ZN[from]} → ${ZN[to]}`,fmt(Math.abs(f.mw)))));
     hit.addEventListener('mouseleave',hideTip);
-    if(Math.abs(f.mw)>=400){ const off=14+width(f.mw)/2; const t=el('text',{x:cv.mx+cv.nx*off,y:cv.my+cv.ny*off+6,class:'flabel'},gFlow); t.textContent=(Math.abs(f.mw)/1000).toFixed(1)+' GW'; }
+    if(Math.abs(f.mw)>=400){ const off=14/K+width(f.mw)/2; const t=el('text',{x:cv.mx+cv.nx*off,y:cv.my+cv.ny*off+6/K,class:'flabel'},gFlow); t.textContent=(Math.abs(f.mw)/1000).toFixed(1)+' GW'; }
   }
-  for(const z in NODE){ const c=el('circle',{cx:NODE[z][0],cy:NODE[z][1],r:7,fill:'var(--flow)',stroke:'var(--surface-1)','stroke-width':2,style:'cursor:pointer'},gFlow); c.addEventListener('click',()=>select(z,false,true)); c.addEventListener('mousemove',e=>showTip(e,zoneTip(z))); c.addEventListener('mouseleave',hideTip); }
-  panel();
+  for(const z in NODE){ const c=el('circle',{cx:NODE[z][0],cy:NODE[z][1],r:7/K,fill:'var(--flow)',stroke:'var(--surface-1)','stroke-width':2/K,style:'cursor:pointer'},gFlow); c.addEventListener('click',()=>select(z,false,true)); c.addEventListener('mousemove',e=>showTip(e,zoneTip(z))); c.addEventListener('mouseleave',hideTip); }
 }
 function stack(container,keys,parts){ // parts: {key: mw}
   const tot=Object.values(parts).reduce((a,b)=>a+b,0)||1; const s=document.getElementById(container+'stack'), k=document.getElementById(container+'keys');
