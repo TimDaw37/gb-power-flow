@@ -11,7 +11,7 @@
   --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7c7b76;
   --border:#dddbd5; --sea:#e9eef3; --land-abroad:#e2e0da; --zone-stroke:#ffffff;
   --div-neg:#2a78d6; --div-mid:#f0efec; --div-pos:#e34948;
-  --flow:#2b2a28; --flow-ic:#6250d6;
+  --flow:#2b2a28; --flow-ic:#6250d6; --wind:rgba(40,40,38,.55);
   --f-wind:#2a78d6; --f-gas:#eb6834; --f-nuclear:#1baf7a; --f-solar:#eda100;
   --f-hydro:#e87ba4; --f-biomass:#008300; --f-imports:#6250d6; --f-other:#9a9893;
 }
@@ -22,7 +22,7 @@
     --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
     --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
     --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-    --flow:#f0efec; --flow-ic:#9085e9;
+    --flow:#f0efec; --flow-ic:#9085e9; --wind:rgba(240,239,236,.55);
     --f-wind:#3987e5; --f-gas:#d95926; --f-nuclear:#199e70; --f-solar:#c98500;
     --f-hydro:#d55181; --f-biomass:#0ca30c; --f-imports:#9085e9; --f-other:#76756f;
   }
@@ -33,7 +33,7 @@
   --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
   --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
   --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-  --flow:#f0efec; --flow-ic:#9085e9;
+  --flow:#f0efec; --flow-ic:#9085e9; --wind:rgba(240,239,236,.55);
   --f-wind:#3987e5; --f-gas:#d95926; --f-nuclear:#199e70; --f-solar:#c98500;
   --f-hydro:#d55181; --f-biomass:#0ca30c; --f-imports:#9085e9; --f-other:#76756f;
 }
@@ -65,6 +65,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .plant{stroke:var(--surface-1);stroke-width:.8;opacity:.9}
 .hide-plants .plant{display:none}
 .hide-labels .flabel{display:none}
+.hide-wind .wxw,.hide-sun .wxs{display:none}
+.wxw line,.wxw path{stroke:var(--wind);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.wxw .wh{stroke:transparent;stroke-width:14}
 #tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 18px rgba(0,0,0,.12);max-width:260px;display:none;z-index:5}
 #tip b{font-weight:600}
 #tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--text-secondary)}
@@ -126,6 +129,8 @@ a{color:var(--div-neg)}
     <div class="toggles">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
+      <label><input type="checkbox" id="tWind" checked> Wind at 100 m</label>
+      <label><input type="checkbox" id="tSun" checked> Sunshine</label>
       <div class="mode"><b>Colour regions by</b>
         <label><input type="radio" name="mode" value="balance" checked> Export / import</label>
         <label><input type="radio" name="mode" value="carbon"> Carbon intensity</label>
@@ -140,6 +145,8 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="fkeys" id="fkeys"></div>
+      <div class="row" id="lgWind"><svg width="34" height="12"><line x1="4" y1="6" x2="28" y2="6" stroke="var(--wind)" stroke-width="2" stroke-linecap="round"/><path d="M23,2 L29,6 L23,10" fill="none" stroke="var(--wind)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>wind at 100 m, length ∝ speed</div>
+      <div class="row" id="lgSun"><svg width="34" height="12"><rect x="2" y="1" width="30" height="10" rx="3" fill="url(#sunlg)"/><defs><linearGradient id="sunlg"><stop offset="0" stop-color="var(--f-solar)" stop-opacity="0"/><stop offset="1" stop-color="var(--f-solar)" stop-opacity=".85"/></linearGradient></defs></svg><span id="lgSunTxt">sunshine (solar radiation)</span></div>
     </div>
     <div id="tip"></div>
   </div>
@@ -148,6 +155,7 @@ a{color:var(--div-neg)}
     <h2>Britain's supply right now</h2>
     <div class="stack" id="natstack"></div>
     <div class="keys" id="natkeys"></div>
+    <p class="ci" id="natwx"></p>
     <div id="zonepanel"><h2>Pick a region</h2><p class="hint">Click a region on the map to see an estimate of where its electricity is coming from.</p></div>
     <h2>Flows across the main boundaries</h2>
     <div id="flowtable"></div>
@@ -159,12 +167,14 @@ a{color:var(--div-neg)}
       <p><b>Flows.</b> Each region's surplus or deficit is passed across a reduced 23-path network with a DC power-flow approximation, using rough transfer capabilities as weights. That gives a <i>pattern</i> of flow, not the flow on any real circuit. The Western HVDC link is treated as an ordinary path, although in reality it is set by the operator.</p>
       <p><b>"Where does it come from?"</b> Power does not travel from one station to one customer. The breakdown uses <i>proportional sharing</i> (Bialek's flow tracing): at each region, incoming power is assumed to mix evenly before moving on. It is an accounting convention, not a measurement.</p>
       <p><b>Check against NESO.</b> NESO publishes forecast day-ahead flows across major boundaries (before constraint actions). Scotland→England (B6/SCOTEX) is the most useful comparison: when the model shows less than that forecast, the gap is mostly curtailed Scottish wind.</p>
+      <p><b>Weather.</b> Wind speed and direction at 100 m (about wind-turbine hub height) and incoming solar radiation, hourly, from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) on a grid of about 100 points over GB and its coastal waters. Wind is interpolated to the half-hour; solar radiation is the mean for the hour. Regional figures are simple means of the grid points in and around each region.</p>
       <p>Data: <a href="https://bmrs.elexon.co.uk/" target="_blank" rel="noopener">Elexon Insights (BMRS)</a> – FUELINST, PN, BOALF; <a href="https://www.neso.energy/data-portal" target="_blank" rel="noopener">NESO data portal</a> – embedded wind &amp; solar forecast, DNO licence-area boundaries. Built by Tim Daw, 2026.</p>
     </details>
   </aside>
 </main>
 <script>/*GEO*/</script>
 <script>/*MODEL*/</script>
+<script>/*WX*/</script>
 <script>
 (function(){
 const SVGNS='http://www.w3.org/2000/svg';
@@ -187,8 +197,10 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gSun=el('g',{class:'wxs','clip-path':'url(#landclip)'},svg), gWind=el('g',{class:'wxw'},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
 for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
+{ const defs=el('defs',{},svg); const cp=el('clipPath',{id:'landclip'},defs); el('path',{d:Object.values(GEO.zones).map(z=>z.d).join('')},cp);
+  const f=el('filter',{id:'soft',x:'-20%',y:'-20%',width:'140%',height:'140%'},defs); el('feGaussianBlur',{stdDeviation:22},f); gSun.setAttribute('filter','url(#soft)'); }
 const zonePaths={};
 for(const [z,v] of Object.entries(GEO.zones)){
   const p=el('path',{d:v.d,class:'zone','data-z':z,tabindex:0,role:'button','aria-label':v.name},gZones);
@@ -209,7 +221,7 @@ const row=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
 
 let R=null, selected=null, daRef=null;
 function zoneTip(z){ if(!R)return `<b>${ZN[z]}</b>`; const q=R.zones[z];
-  return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net))+row('Carbon intensity',Math.round(zoneCI(z))+' g/kWh'); }
+  return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net))+row('Carbon intensity',Math.round(zoneCI(z))+' g/kWh')+(zoneWx(z)?row('Wind at 100 m (mean)',zoneWx(z).ws.toFixed(1)+' m/s')+row('Solar radiation (mean)',Math.round(zoneWx(z).sw)+' W/m²'):''); }
 
 // ---------- data
 async function j(url){ const r=await fetch(url); if(!r.ok) throw new Error(r.status+' '+url.split('?')[0]); return r.json(); }
@@ -242,13 +254,47 @@ async function fetchPeriod(target){ // target: settlement-period start (ms) or n
     const rec=q.result.records[0]; r.daRef=rec?{flow:rec.Flow_MW,limit:rec.Limit_MW}:null; }catch(e){ r.daRef=null; }
   return r;
 }
+// ---------- weather (Open-Meteo, hourly, CC BY 4.0)
+let WX=null, wxFetched=0;
+async function loadWx(){
+  if(WX && Date.now()-wxFetched<55*60000) return WX;
+  const P=WXG.pts, la=P.map(p=>p[0]).join(','), lo=P.map(p=>p[1]).join(',');
+  const d=await j(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=wind_speed_100m,wind_direction_100m,shortwave_radiation&wind_speed_unit=ms&past_days=2&forecast_days=1&timezone=GMT`);
+  WX={t0:Date.parse(d[0].hourly.time[0]+':00Z'), pts:d.map(x=>x.hourly)}; wxFetched=Date.now(); return WX;
+}
+function wxAt(ms){ // wind interpolated in time; radiation = mean over the hour containing ms
+  if(!WX) return null; const h=(ms-WX.t0)/3600000, i=Math.floor(h), f=h-i, n=WX.pts[0].time.length; if(i<0||i+1>=n) return null;
+  return WX.pts.map(x=>{ const s=x.wind_speed_100m[i]*(1-f)+x.wind_speed_100m[i+1]*f;
+    let a=x.wind_direction_100m[i], b=x.wind_direction_100m[i+1]; if(b-a>180)b-=360; if(a-b>180)b+=360;
+    return {ws:s, wd:(a*(1-f)+b*f+360)%360, sw:x.shortwave_radiation[Math.min(n-1,i+1)]??0}; });
+}
+let W=null;
+function zoneWx(z){ if(!W) return null; const ix=WXG.zone[z]||[]; if(!ix.length) return null; let ws=0,sw=0; for(const i of ix){ ws+=W[i].ws; sw+=W[i].sw; } return {ws:ws/ix.length, sw:sw/ix.length}; }
+function drawWx(){
+  gSun.innerHTML=''; gWind.innerHTML='';
+  if(!W){ document.getElementById('lgSunTxt').textContent='sunshine (weather data unavailable)'; return; }
+  const maxSw=Math.max(...W.map(w=>w.sw));
+  document.getElementById('lgSunTxt').textContent=maxSw<5?'sunshine: none (night)':`sunshine, up to ${Math.round(maxSw)} W/m²`;
+  WXG.pts.forEach((p,i)=>{ const w=W[i];
+    if(w.sw>3) el('circle',{cx:p[2],cy:p[3],r:58,fill:'var(--f-solar)','fill-opacity':Math.min(.85,w.sw/650)},gSun);
+    const to=(w.wd+180)*Math.PI/180, ux=Math.sin(to), uy=-Math.cos(to), L=Math.min(58,6+w.ws*3.4);
+    const x1=p[2]-ux*L/2, y1=p[3]-uy*L/2, x2=p[2]+ux*L/2, y2=p[3]+uy*L/2, h=5+w.ws*0.25;
+    const g=el('g',{},gWind);
+    el('line',{x1,y1,x2,y2},g);
+    el('path',{d:`M${x2-ux*h-uy*h*0.7},${y2-uy*h+ux*h*0.7} L${x2},${y2} L${x2-ux*h+uy*h*0.7},${y2-uy*h-ux*h*0.7}`},g);
+    const hit=el('line',{x1,y1,x2,y2,class:'wh'},g);
+    hit.addEventListener('mousemove',e=>showTip(e,`<b>Weather here</b>`+row('Wind at 100 m',`${w.ws.toFixed(1)} m/s from ${Math.round(w.wd)}°`)+row('Solar radiation',`${Math.round(w.sw)} W/m²`))); hit.addEventListener('mouseleave',hideTip);
+  });
+}
 const fmtT=(d,withDay)=>d.toLocaleString('en-GB',{...(withDay?{weekday:'short',day:'numeric',month:'short'}:{}),hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
 async function load(){
   const stamp=document.getElementById('stamp'); stamp.textContent='Loading…';
   let r;
   if(offset===0){ r=await fetchPeriod(null); liveStart=r.spStart; }
   else { const key=liveStart-offset*1800000; r=cache.get(key)||await fetchPeriod(key); cache.set(key,r); }
-  R=r; daRef=r.daRef; draw();
+  try{ await loadWx(); }catch(e){ console.warn('weather',e); }
+  W=wxAt(r.spStart+15*60000);
+  R=r; daRef=r.daRef; draw(); drawWx();
   stamp.innerHTML=r.live?`<b>Live</b> · ${fmtT(r.time)} UK time · updates every 5 min`:`${fmtT(r.time,true)} UK time · period ${r.sp}`+(r.embMissing?' · <span class="err">no embedded estimate</span>':'');
   document.getElementById('next').disabled=offset===0; document.getElementById('live').classList.toggle('on',offset===0);
 }
@@ -346,6 +392,7 @@ function panel(){
     `<div class="tile"><div class="k">Scotland → England</div><div class="v">${(b6/1000).toFixed(1)} GW</div><div class="n">${daRef?`NESO day-ahead forecast ${(daRef.flow/1000).toFixed(1)} GW (limit ${(daRef.limit/1000).toFixed(1)})`:'model estimate, boundary B6'}</div></div>`+
     `<div class="tile"><div class="k">Carbon intensity</div><div class="v">${Math.round(natCI())} g</div><div class="n">CO₂ per kWh, GB supply incl. imports</div></div>`;
   stack('nat',FUELS,nat);
+  { const e=document.getElementById('natwx'); if(W){ const ws=W.reduce((s,w)=>s+w.ws,0)/W.length, land=WXG.pts.map((p,i)=>i).filter(i=>Object.values(WXG.zone).some(a=>a.includes(i))), sw=land.reduce((s,i)=>s+W[i].sw,0)/land.length; e.innerHTML=`Mean wind at 100 m over GB and its coastal waters <b>${ws.toFixed(1)} m/s</b> · mean solar radiation over land <b>${Math.round(sw)} W/m²</b>`; } else e.textContent=''; }
   // boundary table
   const rows=R.flows.slice().sort((a,b)=>Math.abs(b.mw)-Math.abs(a.mw)).slice(0,10).map(f=>{const from=f.mw>=0?f.a:f.b,to=f.mw>=0?f.b:f.a;return `<tr><td>${ZN[from]} → ${ZN[to]}<div class="hint">${f.label}</div></td><td class="num">${fmt(Math.abs(f.mw))}</td></tr>`}).join('');
   document.getElementById('flowtable').innerHTML=`<table><thead><tr><th>Largest estimated flows</th><th class="num">Flow</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -366,7 +413,7 @@ function zonePanel(z){
     <div class="tiles" style="margin-bottom:6px">
       <div class="tile"><div class="k">Generation</div><div class="v">${fmt(q.gen+q.embW+q.embS)}</div><div class="n">${q.ic>0?`+ ${fmt(q.ic)} landing from abroad`:'within the region'}</div></div>
       <div class="tile"><div class="k">Demand (est.)</div><div class="v">${fmt(q.demand)}</div><div class="n">${q.net>=0?'exporting':'importing'} ${fmt(Math.abs(q.net))}</div></div></div>
-    <p class="ci">Carbon intensity of its supply: <b>${Math.round(zoneCI(z))} g CO₂/kWh</b> (GB ${Math.round(natCI())})</p>
+    <p class="ci">Carbon intensity of its supply: <b>${Math.round(zoneCI(z))} g CO₂/kWh</b> (GB ${Math.round(natCI())})</p>${zoneWx(z)?`<p class="ci">Weather: wind at 100 m <b>${zoneWx(z).ws.toFixed(1)} m/s</b> · solar radiation <b>${Math.round(zoneWx(z).sw)} W/m²</b> (regional means)</p>`:''}
     <h3>Where its electricity comes from (traced)</h3><div class="bars">${bars}</div>
     <h3>…and by source</h3><div class="stack" id="zstack"></div><div class="keys" id="zkeys"></div>`;
   stack('z',FUELS,fuels);
@@ -378,6 +425,8 @@ document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=e=>{ mode=e.
 document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='ArrowLeft')document.getElementById('prev').click(); if(e.key==='ArrowRight'&&offset>0)document.getElementById('next').click(); });
 document.getElementById('fkeys').innerHTML=FUELS.filter(f=>f[0]!=='Imports').map(([k])=>`<span><i class="sw" style="background:${FCOL[k]}"></i>${k}</span>`).join('');
 document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
+document.getElementById('tWind').onchange=e=>svg.classList.toggle('hide-wind',!e.target.checked);
+document.getElementById('tSun').onchange=e=>svg.classList.toggle('hide-sun',!e.target.checked);
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.classList.contains('zone')){} });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
