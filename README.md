@@ -10,6 +10,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 
 - Animated flows between the 14 DNO areas, and across each interconnector.
 - Regions can be coloured by export/import balance, by the carbon intensity of their supply, or by their share of the selected region's supply.
+- Wind arrows at 100 m (about hub height), plus colour modes for wind speed and for sunshine (incoming solar radiation), from Open-Meteo, following the time control.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.
@@ -26,6 +27,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 | Inter-regional flow | — | DC power flow on a reduced network of 14 nodes and 23 paths. Each path is weighted by a rough transfer capability. |
 | Origin of supply | — | Proportional-sharing flow tracing (Bialek). This is an accounting convention: power does not travel from a specific source to a specific consumer. |
 | Carbon intensity | Approximate emission factors (after NESO's Carbon Intensity API methodology); a separate factor for each interconnector's country | Applied to the traced fuel mix. |
+| Weather | Open-Meteo hourly forecast/analysis (CC BY 4.0): wind speed and direction at 100 m, shortwave radiation, on a grid of 98 points (`data/wx_grid.json`) | Wind is interpolated to the half-hour. Radiation is the mean for the hour. Regional values are means of the points in and within 25 km of each region. |
 | Check | NESO day-ahead constraint flows (SCOTEX / B6) | Shown beside the model's Scotland→England flow. |
 
 ### Limitations
@@ -53,3 +55,4 @@ scripts/assemble.py        inlines geo.json and model.js into index.html
 - NESO data: NESO Open Data Licence.
 - Power Station Dictionary: see the OSUKED repository.
 - Coastlines: Natural Earth (public domain).
+- Weather: Open-Meteo, CC BY 4.0.
