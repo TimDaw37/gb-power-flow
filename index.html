@@ -674,7 +674,7 @@ function drawLayers(){
   for(const u of R.units){ if(u.x==null)continue; const k=u.x+','+u.y+','+fuelKey(u.fuel); const st=sites.get(k)||{x:u.x,y:u.y,fuel:u.fuel,z:u.z,name:u.name,mw:0,units:[]}; st.mw+=u.mw; st.units.push(u); sites.set(k,st); }
   for(const st of sites.values()){ if(st.mw<=5)continue; const r=Math.max(1.6,Math.sqrt(st.mw)/Math.sqrt(2000)*maxR)/Math.sqrt(K);
     const c=el('circle',{cx:st.x,cy:st.y,r,class:'plant',fill:FCOL[fuelKey(st.fuel)]},gPlants);
-    const tipHtml=()=>`<b>${st.name}</b>`+row(fuelName(st.fuel),fmt(st.mw))+(st.units.length>1?st.units.map(u=>row('Unit '+u.u,fmt(u.mw))).join(''):row('Unit',st.units[0].u))+row('Region',ZN[st.z]);
+    const nm=[...new Set(st.units.map(u=>u.name))].join(' + '), tipHtml=()=>`<b>${nm}</b>`+row(fuelName(st.fuel),fmt(st.mw))+(st.units.length>1?st.units.map(u=>row('Unit '+u.u,fmt(u.mw))).join(''):row('Unit',st.units[0].u))+row('Region',ZN[st.z]);
     c.addEventListener('mousemove',e=>showTip(e,tipHtml())); c.addEventListener('click',e=>showTip(e,tipHtml())); c.addEventListener('mouseleave',hideTip); }
   // biggest first so small circles stay on top
   [...gPlants.children].sort((a,b)=>b.getAttribute('r')-a.getAttribute('r')).forEach(c=>gPlants.appendChild(c));
