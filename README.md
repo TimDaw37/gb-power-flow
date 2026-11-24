@@ -12,6 +12,8 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 - Regions can be coloured by export/import balance, by the carbon intensity of their supply, or by their share of the selected region's supply.
 - Zoom and pan: mouse wheel, double-click, drag, pinch on touch screens, the + / − / ⤢ buttons, or the + − 0 keys. Lines, dots and text keep their on-screen size, and stations are named once zoomed in.
 - Prices: wholesale market index and imbalance (cash-out) price for the half-hour, with a 48-hour chart (click it to jump to that time).
+- Price units: switch between p/kWh (as on a household bill; the default) and £/MWh (as traded) from the header. The choice is remembered in the browser.
+- Tap a power station or £ mark to see its details; on a phone this no longer jumps down to the region panel.
 - Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as up or down block arrows with a £ inside, sized by amount, a national summary, the largest payments and a per-region line.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
@@ -22,7 +24,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 | Step | Source | Treatment |
 |---|---|---|
 | Unit output | Elexon BMRS: Physical Notifications (PN) and bid-offer acceptances (BOALF) for the current settlement period | Each unit's level is interpolated at the current time. Where a unit has an accepted bid-offer, the latest acceptance replaces its notification. |
-| Unit location | OSUKED Power Station Dictionary, plus about 90 newer plants located by hand (`data/manual_locations.json`) | Each unit is assigned to a DNO licence area by point-in-polygon. Offshore wind is assigned to the area where it lands. |
+| Unit location | OSUKED Power Station Dictionary, plus about 90 newer plants located by hand (`data/manual_locations.json`); Dictionary locations found to be wrong are corrected in `data/location_overrides.json` | Each unit is assigned to a DNO licence area by point-in-polygon. Units at the same site are drawn as one circle. Offshore wind is assigned to the area where it lands. |
 | National totals | Elexon FUELINST (5-minute metered generation by fuel, and each interconnector) | Located unit output is scaled to the metered total. Interconnector flows come from FUELINST. |
 | Embedded generation | NESO embedded wind and solar forecast (national) | Split between areas using indicative capacity shares. |
 | Regional demand | Supplier BM units' PN for each GSP group | Total demand is generation plus net imports, less storage charging. It is split between areas in proportion to the suppliers' notified demand. |

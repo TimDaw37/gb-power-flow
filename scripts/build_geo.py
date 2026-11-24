@@ -48,6 +48,10 @@ for row in csv.DictReader(open(P+'dictionary/ids.csv')):
     for s in row['sett_bmu_id'].split(','):
         s = s.strip()
         if s and not s.startswith('I_'): pts[s] = (*loc[row['dictionary_id']], row['name'])
+# correct Power Station Dictionary locations that are wrong (prefix of the BMU id without its T_/E_ etc.)
+for pre, v in json.load(open(ROOT/'data'/'location_overrides.json')).items():
+    for u in list(pts):
+        if u[2:].startswith(pre): pts[u] = (v[0], v[1], v[2])
 manual = json.load(open(ROOT/'data'/'manual_locations.json'))
 bm = json.load(open(INP/'bmu.json'))
 ref = {x['elexonBmUnit']: x for x in bm if x['elexonBmUnit']}
