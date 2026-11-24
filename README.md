@@ -69,6 +69,10 @@ python3 scripts/assemble.py
 
 Only needed when plant locations, boundaries or CfD contracts change; the page itself fetches live data on load.
 
+## Licence
+
+The code (everything in this repository apart from the data noted below) is released under the [MIT licence](LICENSE): free to use, copy and adapt, provided the copyright notice is kept.
+
 ## Data licences
 
 - Elexon BMRS data: Elexon BMRS licence.
