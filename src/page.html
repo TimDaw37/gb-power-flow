@@ -59,6 +59,14 @@ button:hover{border-color:var(--text-muted)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:calc(100vh - 54px)}
 @media (max-width:900px){main{grid-template-columns:1fr}}
 #mapwrap{position:relative;background:var(--sea);overflow:hidden}
+.viewctl{display:inline-flex;margin-bottom:2px}.viewctl button{border-radius:0;padding:3px 10px;font-size:12.5px}.viewctl button:first-child{border-radius:6px 0 0 6px}.viewctl button:last-child{border-radius:0 6px 6px 0;border-left:none}.viewctl button.on{background:var(--text-primary);color:var(--surface-1);border-color:var(--text-primary)}
+.flowopts{display:contents}.landnote,.lg-land{display:none}.landnote{max-width:210px;color:var(--text-secondary);font-size:12px;line-height:1.35}
+#map.land .L-cable,#map.land .L-plants,#map.land .L-ic,#map.land .L-flow,#map.land .L-bal,#map.land .L-lab{display:none}
+#map.land .zone{fill:transparent!important;stroke:none!important}
+#map.land .L-coast path.gbedge{fill:none;stroke:rgba(30,30,30,.6);stroke-width:2;vector-effect:non-scaling-stroke}#map.land .L-coast path.gbfill{fill:var(--surface-1);stroke:none}
+#map.land .L-coast path.abroad{fill:var(--surface-2);fill-opacity:.85;stroke:rgba(30,30,30,.3)}
+.L-coast,.L-relief{display:none}#map.land .L-coast,#map.land .L-relief{display:inline}
+.L-relief .ct{fill:none;stroke:rgba(40,30,20,.3);stroke-width:.6;vector-effect:non-scaling-stroke}.L-relief .ct0{fill:none;stroke:rgba(20,20,20,.75);stroke-width:1.4;vector-effect:non-scaling-stroke}
 #map{display:block;width:100%;height:calc(100vh - 54px);min-height:560px}
 @media (max-width:900px){#map{height:78vh}}
 .zone{stroke:var(--zone-stroke);stroke-width:calc(1.6px / var(--k,1));cursor:pointer;transition:fill .6s}
@@ -133,6 +141,7 @@ h3{font-size:12.5px;margin:12px 0 4px;color:var(--text-secondary);font-weight:60
 .bars .b .val{text-align:right;font-variant-numeric:tabular-nums}
 .hint{color:var(--text-muted);font-size:12.5px}
 @media (max-width:600px){header{padding:10px 12px;gap:4px 10px}h1{font-size:16px}header .sub{display:none}.status{margin-left:0;width:100%}.long{display:none}#stamp{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}.tctl{width:100%}
+.viewctl{flex-basis:100%}.landnote{max-width:none}
 .toggles,.legend{position:static;max-width:none;margin:8px 10px;border-radius:8px}.toggles{flex-direction:row;flex-wrap:wrap;gap:6px 14px}.toggles .mode{flex-basis:100%}#map{height:auto;min-height:0;aspect-ratio:1000/1305}}
 @media (prefers-reduced-motion: reduce){.flowanim{display:none}}
 .tctl{display:inline-flex;gap:6px;align-items:center}
@@ -165,6 +174,8 @@ a{color:var(--div-neg)}
     <svg id="map" role="img" aria-label="Map of Great Britain showing estimated power flows between regions"></svg>
     <div class="zoomctl" role="group" aria-label="Map zoom"><button type="button" id="zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="zreset" aria-label="Reset view" title="Reset view (0)" style="font-size:15px">⤢</button></div>
     <div class="toggles">
+      <div class="viewctl" role="group" aria-label="Map view"><button type="button" data-v="flows" class="on" aria-pressed="true">Flows</button><button type="button" data-v="land" aria-pressed="false" title="Surplus as hills, shortfall as valleys">Landscape</button></div>
+      <div class="flowopts">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
       <label><input type="checkbox" id="tBal" checked> Balancing payments</label>
@@ -174,8 +185,13 @@ a{color:var(--div-neg)}
         <label><input type="radio" name="mode" value="origin"> Supply to selected region</label>
         <label><input type="radio" name="mode" value="money"> Money in / out (£)</label>
       </div>
+      </div>
+      <div class="landnote">Hills where more electricity is made than used nearby, valleys where more is used than made. Power runs downhill. Indicative only.</div>
     </div>
     <div class="legend">
+      <div class="lg-land"><div><b style="color:var(--text-primary)">Electricity landscape</b></div><div class="ramp" style="background:linear-gradient(90deg,#0d2b52,#3f78b5,#c9dbe8,#eeeadb,#a7c47f,#d8bf72,#9a6a3c,#f3eee6)"></div><div class="ends"><span>uses more</span><span>balance</span><span>makes more</span></div>
+        <p class="hint" style="margin:4px 0 0">Height = local surplus of generation over use, smoothed over about 20 km. Demand is spread by where people live; small local generation evenly across each region. Sea level = balance; contours at fixed steps, so heights compare across time.</p></div>
+      <div class="lg-flows">
       <div id="lgTitle"><b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)</div>
       <div class="ramp" id="lgRamp"></div>
       <div class="ends" id="lgEnds"><span>importing</span><span>balanced</span><span>exporting</span></div>
@@ -188,6 +204,7 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,-9 L8.1,-1.8 L2.4,-1.8 L2.4,9 L-2.4,9 L-2.4,-1.8 L-8.1,-1.8 Z" fill="var(--text-primary)"/></svg>paid to make more</div>
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,9 L8.1,1.8 L2.4,1.8 L2.4,-9 L-2.4,-9 L-2.4,1.8 L-8.1,1.8 Z" fill="var(--text-primary)"/></svg>paid to make less</div>
       <div class="row" style="padding-left:40px">size = total £ paid in one half-hour</div>
+      </div>
     </div>
     <div id="tip"></div>
   </div>
@@ -208,6 +225,7 @@ a{color:var(--div-neg)}
     <details>
       <summary>How this is worked out, and its limits</summary>
       <p><b>Supply by place.</b> Every unit in the Balancing Mechanism reports a Physical Notification (its planned output, minute by minute). Where the system operator has instructed a unit to change (a bid-offer acceptance, e.g. curtailing Scottish wind), the accepted level is used instead. Units are located from the open <a href="https://github.com/OSUKED/Power-Station-Dictionary" target="_blank" rel="noopener">Power Station Dictionary</a>, supplemented by hand for newer plant; offshore wind is drawn at sea and assigned to the region where it comes ashore. These outputs are scaled so the total matches Elexon's 5-minute metered generation (FUELINST).</p>
+      <p><b>Landscape view.</b> A purely indicative picture: hills where more electricity is made than used nearby, valleys where more is used than made, so power runs downhill. Each station's output is placed where it is (offshore wind at sea, imports where they land), small local generation is spread evenly over its region, and each region's estimated demand is spread 80% by where people live (towns of 1,000+ from GeoNames) and 20% evenly. The difference is smoothed over about 20 km and drawn on a fixed scale, with contours at fixed steps, so the landscape can be compared from one half-hour to the next. The smoothing distance shapes the picture; the regional totals behind it are the same as on the flow map.</p>
       <p><b>Money in / out.</b> An accounting picture of who pays whom for one half-hour, not a record of actual bills. Each region pays the market index price for the electricity it uses and is paid it for what it generates; imports are paid abroad, exports paid for from abroad, so the money runs against the power and adds up to zero. On top: Contract for Difference payments, estimated as (strike price − market price) × output for each unit with a live contract (current indexed strike prices from the <a href="https://dp.lowcarboncontracts.uk/" target="_blank" rel="noopener">Low Carbon Contracts Company</a>; negative when the price is above strike and generators pay back; about 1.3 GW of small distribution-connected contracts not counted), and balancing payments to particular units. Both are recovered from all consumers in proportion to use, so each region pays a share. Real bills use hedged contract prices, network charges and other levies not shown here.</p>
       <p><b>Small, local generation.</b> NESO's embedded wind and solar estimates (national totals) are shared between regions in proportion to an indicative capacity distribution.</p>
       <p><b>Demand by place.</b> National demand is everything generated plus net imports, less storage charging. It is shared between the 14 distribution areas using suppliers' own half-hourly demand notifications for each area, which gives a live regional shape.</p>
@@ -216,7 +234,7 @@ a{color:var(--div-neg)}
       <p><b>Prices.</b> Britain has one national wholesale price, not regional ones. The market index price is the volume-weighted price of short-term trading on the power exchange for each half-hour; the imbalance (cash-out) price is what suppliers and generators pay or receive for being out of balance. Most electricity is sold through private contracts whose prices are not published.</p>
       <p><b>Balancing payments.</b> Every unit in the Balancing Mechanism publishes the prices at which it will increase output (offers) or reduce it (bids), and the system operator's instructions are public. Elexon's indicative cashflows give what each unit was paid, or paid back, for those instructions in each half-hour. Wind farms usually have negative bid prices (they lose subsidy when switched off), so they are paid to reduce output; fossil plant usually pays back part of its saved fuel cost. Cashflows are published about half an hour after the period, so live view shows the latest published half-hour.</p>
       <p><b>Check against NESO.</b> NESO publishes forecast day-ahead flows across major boundaries (before constraint actions). Scotland→England (B6/SCOTEX) is the most useful comparison: when the model shows less than that forecast, the gap is mostly curtailed Scottish wind.</p>
-      <p>Data: <a href="https://bmrs.elexon.co.uk/" target="_blank" rel="noopener">Elexon Insights (BMRS)</a> – FUELINST, PN, BOALF; <a href="https://www.neso.energy/data-portal" target="_blank" rel="noopener">NESO data portal</a> – embedded wind &amp; solar forecast, DNO licence-area boundaries. Built by Tim Daw, 2026. <a href="https://github.com/TimDaw37/gb-power-flow" target="_blank" rel="noopener">Source code on GitHub</a> (MIT licence).</p>
+      <p>Data: <a href="https://bmrs.elexon.co.uk/" target="_blank" rel="noopener">Elexon Insights (BMRS)</a> – FUELINST, PN, BOALF; <a href="https://www.neso.energy/data-portal" target="_blank" rel="noopener">NESO data portal</a> – embedded wind &amp; solar forecast, DNO licence-area boundaries. Town populations for the landscape view: <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0). Built by Tim Daw, 2026. <a href="https://github.com/TimDaw37/gb-power-flow" target="_blank" rel="noopener">Source code on GitHub</a> (MIT licence).</p>
     </details>
   </aside>
 </main>
@@ -294,8 +312,9 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gCable=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gBal=el('g',{},svg), gLab=el('g',{},svg);
-for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
+const gLand=el('g',{},svg), gGB=el('g',{class:'L-coast L-gb'},svg), gRelief=el('g',{class:'L-relief'},svg), gZones=el('g',{},svg), gCoast=el('g',{class:'L-coast'},svg), gCable=el('g',{class:'L-cable'},svg), gPlants=el('g',{class:'L-plants'},svg), gIC=el('g',{class:'L-ic'},svg), gFlow=el('g',{class:'L-flow'},svg), gBal=el('g',{class:'L-bal'},svg), gLab=el('g',{class:'L-lab'},svg);
+for(const l of GEO.land){ el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand); if(l.name!=='United Kingdom') el('path',{d:l.d,class:'abroad'},gCoast); }
+{ const ds=Object.values(GEO.zones).map(v=>v.d); for(const d of ds) el('path',{d,class:'gbedge'},gGB); for(const d of ds) el('path',{d,class:'gbfill'},gGB); }  // coastline for the landscape view: strokes under fills, so only the outer edge shows
 const zonePaths={};
 for(const [z,v] of Object.entries(GEO.zones)){
   const p=el('path',{d:v.d,class:'zone','data-z':z,tabindex:0,role:'button','aria-label':v.name},gZones);
@@ -579,7 +598,71 @@ function moneyPanel(){
     <div class="balrows">${top.map(line).join('')}</div>
     <p class="hint" style="margin-top:6px">An accounting picture: regions that export are paid for what they sell. CfD amounts are estimates from current strike prices (LCCC, ${CFD._asof}) against the half-hour price; about 1.3 GW of small distribution-connected CfD capacity is not counted. Choose <b>Money in / out</b> on the map to see it.</p>`;
 }
-function draw(){ M=money(); colourZones(); drawLayers(); panel(); moneyPanel(); }
+// ---------- landscape view: surplus as hills, shortfall as valleys (indicative)
+// Each unit's output is placed at its location, imports at their landing point, small local generation evenly over its
+// region, and each region's demand 80% by where people live (GeoNames towns) and 20% evenly over its land. The net
+// (made − used) is smoothed with a Gaussian of about 20 km and shown on a fixed scale, so heights compare across time.
+const LS={cell:3, sigma:20, h0:0.04, hmax:3, grid:null, pop:null, popP:null, url:null, view:'flows'};
+function lsGrid(){ if(LS.grid) return LS.grid;
+  const c=LS.cell, W=Math.ceil(VB[2]/c), H=Math.ceil(VB[3]/c), cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d',{willReadFrequently:true}), zone=new Int8Array(W*H).fill(-1), keys=Object.keys(GEO.zones), cnt=new Float64Array(keys.length);
+  keys.forEach((z,zi)=>{ ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H); ctx.setTransform(1/c,0,0,1/c,-VB[0]/c,-VB[1]/c);
+    ctx.fill(new Path2D(GEO.zones[z].d)); const a=ctx.getImageData(0,0,W,H).data;
+    for(let i=0;i<W*H;i++) if(a[i*4+3]>127&&zone[i]<0){ zone[i]=zi; cnt[zi]++; } });
+  return (LS.grid={W,H,zone,keys,cnt,zi:Object.fromEntries(keys.map((z,i)=>[z,i]))}); }
+const lsCell=(G,x,y)=>{ const i=Math.floor((x-VB[0])/LS.cell), j=Math.floor((y-VB[1])/LS.cell); return i<0||j<0||i>=G.W||j>=G.H?-1:j*G.W+i; };
+function lsPop(){ return LS.popP||(LS.popP=fetch('data/pop.json',{signal:AbortSignal.timeout?AbortSignal.timeout(15000):undefined}).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).then(p=>(LS.pop=p)).catch(e=>{ LS.popP=null; throw e; })); }
+function blur(f,W,H,sig){ const r=Math.ceil(sig*3), k=new Float64Array(2*r+1); let ks=0; for(let i=-r;i<=r;i++){ k[i+r]=Math.exp(-i*i/(2*sig*sig)); ks+=k[i+r]; } for(let i=0;i<k.length;i++) k[i]/=ks;
+  const t=new Float64Array(W*H), o=new Float64Array(W*H);
+  for(let y=0;y<H;y++){ const row=y*W; for(let x=0;x<W;x++){ let s=0; const a=Math.max(-r,-x), b=Math.min(r,W-1-x); for(let d=a;d<=b;d++) s+=f[row+x+d]*k[d+r]; t[row+x]=s; } }
+  for(let x=0;x<W;x++) for(let y=0;y<H;y++){ let s=0; const a=Math.max(-r,-y), b=Math.min(r,H-1-y); for(let d=a;d<=b;d++) s+=t[(y+d)*W+x]*k[d+r]; o[y*W+x]=s; }
+  return o; }
+function lsField(){ const G=lsGrid(), {W,H,zone,keys,cnt,zi}=G, f=new Float64Array(W*H), N=keys.length;
+  const even=new Float64Array(N);                                  // MW to spread evenly over each region's land
+  const put=(x,y,mw,z)=>{ const i=lsCell(G,x,y); if(i>=0) f[i]+=mw; else if(z&&zi[z]!=null) even[zi[z]]+=mw; };
+  for(const u of R.units){ if(!u.mw) continue; if(u.x!=null) put(u.x,u.y,u.mw,u.z); else if(zi[u.z]!=null) even[zi[u.z]]+=u.mw; }
+  for(const c of R.ics) put(c.x1,c.y1,c.mw,c.zone);
+  const popZ=new Float64Array(N), popI=[];
+  for(const [x,y,p] of LS.pop){ const i=lsCell(G,x,y); if(i<0||zone[i]<0) continue; popZ[zone[i]]+=p; popI.push(i,p); }
+  for(const z of keys){ const q=R.zones[z], k=zi[z]; even[k]+=q.embW+q.embS-0.2*q.demand-(popZ[k]?0:0.8*q.demand); }
+  for(let n=0;n<popI.length;n+=2){ const i=popI[n], k=zone[i]; f[i]-=0.8*R.zones[keys[k]].demand*popI[n+1]/popZ[k]; }
+  for(let i=0;i<W*H;i++){ const k=zone[i]; if(k>=0&&cnt[k]) f[i]+=even[k]/cnt[k]; }
+  const b=blur(f,W,H,LS.sigma/LS.cell), a=LS.cell*LS.cell, v=new Float32Array(W*H), top=Math.asinh(LS.hmax/LS.h0);
+  for(let i=0;i<W*H;i++) v[i]=Math.max(-1,Math.min(1,Math.asinh(b[i]/a/LS.h0)/top));   // −1 … 1, fixed scale
+  return v; }
+const RAMP=[[-1,[13,43,82]],[-0.55,[38,88,150]],[-0.2,[120,165,205]],[-0.02,[214,228,236]],[0,[238,234,219]],[0.04,[222,230,200]],[0.2,[167,196,127]],[0.45,[216,191,114]],[0.7,[154,106,60]],[1,[243,238,230]]];
+function rampCol(v){ for(let i=1;i<RAMP.length;i++) if(v<=RAMP[i][0]){ const [a,ca]=RAMP[i-1],[b,cb]=RAMP[i],t=(v-a)/(b-a); return [0,1,2].map(k=>ca[k]+(cb[k]-ca[k])*t); } return RAMP[RAMP.length-1][1]; }
+function lsRender(v){ const {W,H}=LS.grid, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d'), img=ctx.createImageData(W,H), ex=60;
+  const L=[-0.6,-0.6,0.53];  // light from the north-west
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const i=y*W+x, xl=v[i-(x>0)], xr=v[i+(x<W-1)], yu=v[i-(y>0?W:0)], yd=v[i+(y<H-1?W:0)];
+    const nx=-(xr-xl)*ex, ny=-(yd-yu)*ex, nl=Math.hypot(nx,ny,1), sh=Math.max(0,(nx*L[0]+ny*L[1]+L[2])/nl)/0.53;
+    const c=rampCol(v[i]), m=0.62+0.42*sh; img.data[i*4]=Math.min(255,c[0]*m); img.data[i*4+1]=Math.min(255,c[1]*m); img.data[i*4+2]=Math.min(255,c[2]*m); const t=Math.max(0,Math.min(1,(Math.abs(v[i])-0.03)/0.14)); img.data[i*4+3]=Math.round(255*t*t*(3-2*t)); }
+  ctx.putImageData(img,0,0); return cv; }
+function lsContours(v){ const {W,H}=LS.grid, c=LS.cell, X=i=>VB[0]+(i+0.5)*c, Y=j=>VB[1]+(j+0.5)*c, out={};
+  const levels=[]; for(let l=-0.9;l<=0.95;l+=0.1) levels.push(Math.round(l*10)/10);
+  for(const lv of levels){ let d=''; for(let j=0;j<H-1;j++) for(let i=0;i<W-1;i++){
+      const a=v[j*W+i]-lv, b=v[j*W+i+1]-lv, cc=v[(j+1)*W+i+1]-lv, dd=v[(j+1)*W+i]-lv, pts=[];
+      if(lv===0&&Math.max(Math.abs(a),Math.abs(b),Math.abs(cc),Math.abs(dd))<0.05) continue;   // no balance line across near-flat ground
+      if((a>0)!==(b>0)) pts.push([X(i)+c*a/(a-b),Y(j)]); if((b>0)!==(cc>0)) pts.push([X(i+1),Y(j)+c*b/(b-cc)]);
+      if((dd>0)!==(cc>0)) pts.push([X(i)+c*dd/(dd-cc),Y(j+1)]); if((a>0)!==(dd>0)) pts.push([X(i),Y(j)+c*a/(a-dd)]);
+      for(let k=0;k+1<pts.length;k+=2) d+=`M${pts[k][0].toFixed(1)} ${pts[k][1].toFixed(1)}L${pts[k+1][0].toFixed(1)} ${pts[k+1][1].toFixed(1)}`; }
+    out[lv]=d; }
+  return out; }
+let lsSeq=0;
+async function drawLandscape(){ if(LS.view!=='land'||!R) return; const my=++lsSeq;
+  try{ if(!LS.pop) await lsPop(); }catch(e){ gRelief.innerHTML=''; document.querySelector('.landnote').innerHTML='<span class="err">Could not load the population data for this view.</span>'; return; }
+  if(my!==lsSeq||LS.view!=='land') return;
+  const v=lsField(), cv=lsRender(v), ct=lsContours(v);
+  cv.toBlob(bl=>{ if(my!==lsSeq) return; if(LS.url) URL.revokeObjectURL(LS.url); LS.url=URL.createObjectURL(bl);
+    gRelief.innerHTML=''; el('image',{href:LS.url,x:VB[0],y:VB[1],width:LS.grid.W*LS.cell,height:LS.grid.H*LS.cell,preserveAspectRatio:'none',style:'image-rendering:auto'},gRelief);
+    for(const [lv,d] of Object.entries(ct)) if(d) el('path',{d,class:+lv===0?'ct0':'ct'},gRelief); }); }
+function setView(vw){ LS.view=vw; svg.classList.toggle('land',vw==='land'); document.querySelectorAll('.viewctl button').forEach(b=>{ b.classList.toggle('on',b.dataset.v===vw); b.setAttribute('aria-pressed',b.dataset.v===vw); });
+  document.querySelector('.flowopts').style.display=vw==='land'?'none':''; document.querySelector('.landnote').style.display=vw==='land'?'block':'';
+  document.querySelector('.lg-land').style.display=vw==='land'?'block':''; document.querySelector('.lg-flows').style.display=vw==='land'?'none':'';
+  svg.setAttribute('aria-label',vw==='land'?'Relief map of Great Britain: hills where more electricity is made than used, valleys where more is used':'Map of Great Britain showing estimated power flows between regions');
+  hideTip(); if(vw==='land') drawLandscape(); try{ history.replaceState(null,'',vw==='land'?'#landscape':location.pathname+location.search); }catch(e){} }
+document.querySelectorAll('.viewctl button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+function draw(){ M=money(); colourZones(); drawLayers(); panel(); moneyPanel(); drawLandscape(); }
 function drawLayers(){
   gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML=''; gCable.innerHTML='';
   // plants
@@ -728,7 +811,7 @@ document.getElementById('tBal').onchange=e=>svg.classList.toggle('hide-bal',!e.t
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.closest('.plant,.balmark')) hideTip(); });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
-select(fromHash||'_C',!fromHash); updateLegendMoney();
+select(fromHash||'_C',!fromHash); updateLegendMoney(); if(location.hash==='#landscape') setView('land');
 run(); setInterval(()=>{ if(offset===0) run(); },5*60000);
 })();
 </script>
