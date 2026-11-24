@@ -16,7 +16,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 - Tap a power station or £ mark to see its details; on a phone this no longer jumps down to the region panel.
 - Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as up or down block arrows with a £ inside, sized by amount, a national summary, the largest payments and a per-region line.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
-- **Landscape view** (switch at the top of the map panel, or `#landscape` in the address): an indicative relief map with hills where more electricity is made than used nearby and valleys where more is used, so power runs downhill. Output is placed at each station (offshore wind counted at its landing point and drawn as a narrow spike at sea, imports at their landing), small local generation evenly over its region, and regional demand 80% by town population (GeoNames, `data/pop.json` built by `scripts/build_pop.py`) and 20% evenly; the net is smoothed with a 35 km Gaussian and shown on a fixed scale with fixed contours. Same model and data as the flow map.
+- **Landscape view** (switch at the top of the map panel, or `#landscape` in the address): an indicative relief map with hills where more electricity is made than used nearby and valleys where more is used, so power runs downhill. Output is placed at each station (offshore wind counted at its landing point and drawn as a narrow spike at sea, imports at their landing), small local generation evenly over its region, and regional demand 80% by town population (GeoNames, `data/pop.json` built by `scripts/build_pop.py`) and 20% evenly; the net is smoothed with a 35 km Gaussian and shown on a fixed scale with fixed contours. Same model and data as the flow map. A **Flat | 3D** switch gives a tilted 3D version (`#landscape3d`) built with [three.js](https://threejs.org/) (MIT), loaded from jsDelivr only when 3D is first chosen and abandoned after 20 s if it doesn't arrive; drag to turn, scroll or pinch to zoom. Heights are exaggerated (full scale = 48 km).
 - **Money in / out:** a fourth colouring that shows the £ for the half-hour instead of the MW: gold arrows run against the power (the importing region pays the exporting one, GB pays abroad for imports), regions are coloured by net £ received or paid, and each region's panel breaks it down into wholesale, CfD difference payments and balancing, with its share of the CfD levy and balancing costs.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.
@@ -81,6 +81,7 @@ The code (everything in this repository apart from the data noted below) is rele
 - NESO data: NESO Open Data Licence.
 - Power Station Dictionary: see the OSUKED repository.
 - CfD data: Low Carbon Contracts Company data portal (Open Government Licence).
+- 3D rendering: three.js (MIT), loaded on demand from jsDelivr.
 - Town populations: GeoNames (CC BY 4.0), via the all-the-cities npm package (MIT).
 - Location checks: Wikidata (CC0) and DESNZ Renewable Energy Planning Database (Open Government Licence).
 - Coastlines: Natural Earth (public domain).

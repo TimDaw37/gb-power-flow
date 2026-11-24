@@ -60,6 +60,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 @media (max-width:900px){main{grid-template-columns:1fr}}
 #mapwrap{position:relative;background:var(--sea);overflow:hidden}
 .viewctl{display:inline-flex;margin-bottom:2px}.viewctl button{border-radius:0;padding:3px 10px;font-size:12.5px}.viewctl button:first-child{border-radius:6px 0 0 6px}.viewctl button:last-child{border-radius:0 6px 6px 0;border-left:none}.viewctl button.on{background:var(--text-primary);color:var(--surface-1);border-color:var(--text-primary)}
+#land3d{position:absolute;left:0;top:0;right:0;background:var(--sea);touch-action:none;cursor:grab}#land3d canvas{display:block;width:100%!important;height:100%!important}#land3d .msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--text-secondary);font-size:13px;text-align:center;max-width:260px}
+.dimctl{margin-bottom:6px}.landtext[data-d="3d"]::after{content:" Drag to turn, scroll or pinch to zoom.";color:var(--text-primary)}
 .flowopts{display:contents}.landnote,.lg-land{display:none}.landnote{max-width:210px;color:var(--text-secondary);font-size:12px;line-height:1.35}
 #map.land .L-plants,#map.land .L-ic,#map.land .L-flow,#map.land .L-bal,#map.land .L-lab{display:none}
 #map.land .zone{fill:transparent!important;stroke:none!important}
@@ -162,6 +164,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 a{color:var(--div-neg)}
 .err{color:#d03b3b}
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
 <header>
@@ -171,6 +174,7 @@ a{color:var(--div-neg)}
 </header>
 <main>
   <div id="mapwrap">
+    <div id="land3d" hidden></div>
     <svg id="map" role="img" aria-label="Map of Great Britain showing estimated power flows between regions"></svg>
     <div class="zoomctl" role="group" aria-label="Map zoom"><button type="button" id="zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="zreset" aria-label="Reset view" title="Reset view (0)" style="font-size:15px">⤢</button></div>
     <div class="toggles">
@@ -186,7 +190,7 @@ a{color:var(--div-neg)}
         <label><input type="radio" name="mode" value="money"> Money in / out (£)</label>
       </div>
       </div>
-      <div class="landnote">Hills where more electricity is made than used nearby, valleys where more is used than made. Power runs downhill. Indicative only.</div>
+      <div class="landnote"><div class="viewctl dimctl" role="group" aria-label="Landscape style"><button type="button" data-d="2d" class="on" aria-pressed="true">Flat</button><button type="button" data-d="3d" aria-pressed="false" title="Tilted 3D view: drag to turn, pinch or scroll to zoom">3D</button></div><div class="landtext">Hills where more electricity is made than used nearby, valleys where more is used than made. Power runs downhill. Indicative only.</div></div>
     </div>
     <div class="legend">
       <div class="lg-land"><div><b style="color:var(--text-primary)">Electricity landscape</b></div><div class="ramp" style="background:linear-gradient(90deg,#0d2b52,#2658a0,#a8c6e0,#ced6c8,#bad39c,#92bb68,#d8bf72,#9a6a3c,#f3eee6)"></div><div class="ends"><span>uses more</span><span>balance</span><span>makes more</span></div>
@@ -225,7 +229,7 @@ a{color:var(--div-neg)}
     <details>
       <summary>How this is worked out, and its limits</summary>
       <p><b>Supply by place.</b> Every unit in the Balancing Mechanism reports a Physical Notification (its planned output, minute by minute). Where the system operator has instructed a unit to change (a bid-offer acceptance, e.g. curtailing Scottish wind), the accepted level is used instead. Units are located from the open <a href="https://github.com/OSUKED/Power-Station-Dictionary" target="_blank" rel="noopener">Power Station Dictionary</a>, supplemented by hand for newer plant; offshore wind is drawn at sea and assigned to the region where it comes ashore. These outputs are scaled so the total matches Elexon's 5-minute metered generation (FUELINST).</p>
-      <p><b>Landscape view.</b> A purely indicative picture: hills where more electricity is made than used nearby, valleys where more is used than made, so power runs downhill. Each station's output is placed where it is (offshore wind at sea, imports where they land), small local generation is spread evenly over its region, and each region's estimated demand is spread 80% by where people live (towns of 1,000+ from GeoNames) and 20% evenly. Offshore wind farms are drawn as narrow spikes at sea, with their cables, and their output is counted where it comes ashore. The difference is smoothed over about 35 km and drawn on a fixed scale, with contours at fixed steps, so the landscape can be compared from one half-hour to the next. The smoothing distance shapes the picture; the regional totals behind it are the same as on the flow map.</p>
+      <p><b>Landscape view.</b> A purely indicative picture: hills where more electricity is made than used nearby, valleys where more is used than made, so power runs downhill. Each station's output is placed where it is (offshore wind at sea, imports where they land), small local generation is spread evenly over its region, and each region's estimated demand is spread 80% by where people live (towns of 1,000+ from GeoNames) and 20% evenly. Offshore wind farms are drawn as narrow spikes at sea, with their cables, and their output is counted where it comes ashore. The difference is smoothed over about 35 km and drawn on a fixed scale, with contours at fixed steps, so the landscape can be compared from one half-hour to the next. The smoothing distance shapes the picture; the regional totals behind it are the same as on the flow map. The 3D version uses the same surface with heights exaggerated, drawn with <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a>.</p>
       <p><b>Money in / out.</b> An accounting picture of who pays whom for one half-hour, not a record of actual bills. Each region pays the market index price for the electricity it uses and is paid it for what it generates; imports are paid abroad, exports paid for from abroad, so the money runs against the power and adds up to zero. On top: Contract for Difference payments, estimated as (strike price − market price) × output for each unit with a live contract (current indexed strike prices from the <a href="https://dp.lowcarboncontracts.uk/" target="_blank" rel="noopener">Low Carbon Contracts Company</a>; negative when the price is above strike and generators pay back; about 1.3 GW of small distribution-connected contracts not counted), and balancing payments to particular units. Both are recovered from all consumers in proportion to use, so each region pays a share. Real bills use hedged contract prices, network charges and other levies not shown here.</p>
       <p><b>Small, local generation.</b> NESO's embedded wind and solar estimates (national totals) are shared between regions in proportion to an indicative capacity distribution.</p>
       <p><b>Demand by place.</b> National demand is everything generated plus net imports, less storage charging. It is shared between the 14 distribution areas using suppliers' own half-hourly demand notifications for each area, which gives a live regional shape.</p>
@@ -1611,7 +1615,7 @@ svg.setAttribute('preserveAspectRatio','xMidYMid meet');
 function refit(){ const k=K, cx=VIEW.x+VIEW.w/2, cy=VIEW.y+VIEW.h/2; computeBase();
   if(k<=1.01) Object.assign(VIEW,BASE); else { VIEW.w=BASE.w/k; VIEW.h=BASE.h/k; VIEW.x=cx-VIEW.w/2; VIEW.y=cy-VIEW.h/2; }
   applyView(); }
-setTimeout(()=>{ refit(); new ResizeObserver(refit).observe(svg); },0);   // after all declarations below have run
+setTimeout(()=>{ refit(); new ResizeObserver(()=>{ refit(); box3d.style.height=svg.getBoundingClientRect().height+'px'; }).observe(svg); },0);   // after all declarations below have run
 const FUELS=[['Wind','--f-wind'],['Gas','--f-gas'],['Nuclear','--f-nuclear'],['Solar','--f-solar'],['Biomass','--f-biomass'],['Imports','--f-imports'],['Other','--f-other']];
 const fuelKey=f=>(f==='Hydro'||f==='Storage')?'Other':f;   // hydro, pumped storage and batteries are small: grouped as Other
 const fuelName=f=>f==='Storage'?'Storage':f==='Hydro'?'Hydro / pumped storage':f;
@@ -1945,15 +1949,16 @@ function lsField(){ const G=lsGrid(), {W,H,zone,keys,cnt,zi}=G, f=new Float64Arr
   for(let i=0;i<W*H;i++){ const k=zone[i]; if(k>=0&&cnt[k]) f[i]+=even[k]/cnt[k]; }
   const b=blur(f,W,H,LS.sigma/LS.cell), bs=blur(sp,W,H,LS.spike/LS.cell), a=LS.cell*LS.cell, v=new Float32Array(W*H), top=Math.asinh(LS.hmax/LS.h0);
   for(let i=0;i<W*H;i++) b[i]+=bs[i];   // offshore spikes (and Viking on Shetland)
-  for(let i=0;i<W*H;i++) v[i]=Math.max(-1,Math.min(1,Math.asinh(b[i]/a/LS.h0)/top));   // −1 … 1, fixed scale
-  return v; }
+  const raw=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++){ raw[i]=Math.asinh(b[i]/a/LS.h0)/top; v[i]=Math.max(-1,Math.min(1,raw[i])); }   // −1 … 1, fixed scale
+  LS.raw=raw; return v; }
 const RAMP=[[-1,[13,43,82]],[-0.55,[38,88,150]],[-0.2,[103,152,204]],[-0.03,[168,198,224]],[0,[206,214,200]],[0.03,[186,211,156]],[0.2,[146,187,104]],[0.45,[216,191,114]],[0.7,[154,106,60]],[1,[243,238,230]]];
 function rampCol(v){ for(let i=1;i<RAMP.length;i++) if(v<=RAMP[i][0]){ const [a,ca]=RAMP[i-1],[b,cb]=RAMP[i],t=(v-a)/(b-a); return [0,1,2].map(k=>ca[k]+(cb[k]-ca[k])*t); } return RAMP[RAMP.length-1][1]; }
-function lsRender(v){ const {W,H}=LS.grid, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d'), img=ctx.createImageData(W,H), ex=60;
+function lsRender(v,flat){ const {W,H}=LS.grid, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d'), img=ctx.createImageData(W,H), ex=60;
   const L=[-0.6,-0.6,0.53];  // light from the north-west
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const i=y*W+x, xl=v[i-(x>0)], xr=v[i+(x<W-1)], yu=v[i-(y>0?W:0)], yd=v[i+(y<H-1?W:0)];
     const nx=-(xr-xl)*ex, ny=-(yd-yu)*ex, nl=Math.hypot(nx,ny,1), sh=Math.max(0,(nx*L[0]+ny*L[1]+L[2])/nl)/0.53;
-    const c=rampCol(v[i]), m=0.62+0.42*sh; img.data[i*4]=Math.min(255,c[0]*m); img.data[i*4+1]=Math.min(255,c[1]*m); img.data[i*4+2]=Math.min(255,c[2]*m); const t=Math.max(0,Math.min(1,(Math.abs(v[i])-0.03)/0.14)); img.data[i*4+3]=LS.grid.zone[i]>=0?255:Math.round(255*t*t*(3-2*t)); }   // all land coloured; sea fades out at balance
+    const c=rampCol(v[i]), m=flat?1:0.62+0.42*sh; img.data[i*4]=Math.min(255,c[0]*m); img.data[i*4+1]=Math.min(255,c[1]*m); img.data[i*4+2]=Math.min(255,c[2]*m); const t=Math.max(0,Math.min(1,(Math.abs(v[i])-0.03)/0.14)); img.data[i*4+3]=LS.grid.zone[i]>=0?255:Math.round(150*t*t*(3-2*t)); }   // all land coloured; sea fades out at balance
   ctx.putImageData(img,0,0); return cv; }
 function lsContours(v){ const {W,H}=LS.grid, c=LS.cell, X=i=>VB[0]+(i+0.5)*c, Y=j=>VB[1]+(j+0.5)*c, out={};
   const levels=[]; for(let l=-0.9;l<=0.95;l+=0.1) levels.push(Math.round(l*10)/10);
@@ -1967,18 +1972,72 @@ function lsContours(v){ const {W,H}=LS.grid, c=LS.cell, X=i=>VB[0]+(i+0.5)*c, Y=
   return out; }
 let lsSeq=0;
 async function drawLandscape(){ if(LS.view!=='land'||!R) return; const my=++lsSeq;
-  try{ if(!LS.pop) await lsPop(); }catch(e){ gRelief.innerHTML=''; document.querySelector('.landnote').innerHTML='<span class="err">Could not load the population data for this view.</span>'; return; }
+  try{ if(!LS.pop) await lsPop(); }catch(e){ gRelief.innerHTML=''; document.querySelector('.landtext').innerHTML='<span class="err">Could not load the population data for this view.</span>'; return; }
   if(my!==lsSeq||LS.view!=='land') return;
   const v=lsField(), cv=lsRender(v), ct=lsContours(v);
+  if(LS.dim==='3d') draw3d(v,ct);
   cv.toBlob(bl=>{ if(my!==lsSeq) return; if(LS.url) URL.revokeObjectURL(LS.url); LS.url=URL.createObjectURL(bl);
     gRelief.innerHTML=''; el('image',{href:LS.url,x:VB[0],y:VB[1],width:LS.grid.W*LS.cell,height:LS.grid.H*LS.cell,preserveAspectRatio:'none',style:'image-rendering:auto'},gRelief);
     for(const [lv,d] of Object.entries(ct)) if(d) el('path',{d,class:+lv===0?'ct0':'ct'},gRelief); }); }
-function setView(vw){ LS.view=vw; svg.classList.toggle('land',vw==='land'); document.querySelectorAll('.viewctl button').forEach(b=>{ b.classList.toggle('on',b.dataset.v===vw); b.setAttribute('aria-pressed',b.dataset.v===vw); });
+// ---------- landscape in 3D (three.js, loaded on first use with a time limit)
+LS.dim='2d'; let T3=null, t3Load=null;
+const box3d=document.getElementById('land3d');
+function loadThree(){ if(t3Load) return t3Load;
+  const lim=ms=>new Promise((_,rej)=>setTimeout(()=>rej(new Error('timed out')),ms));
+  return (t3Load=Promise.race([Promise.all([import('three'),import('three/addons/controls/OrbitControls.js')]),lim(20000)]).catch(e=>{ t3Load=null; throw e; })); }
+function texture3d(v,ct){ const {W,H}=LS.grid, k=1.2, TW=Math.round(VB[2]*k), TH=Math.round(VB[3]*k), cv=document.createElement('canvas'); cv.width=TW; cv.height=TH;
+  const x=cv.getContext('2d'); x.fillStyle=css('--sea'); x.fillRect(0,0,TW,TH); x.setTransform(k,0,0,k,-VB[0]*k,-VB[1]*k);
+  x.fillStyle=css('--land-abroad'); for(const l of GEO.land) if(l.name!=='United Kingdom') x.fill(new Path2D(l.d));
+  x.fillStyle=css('--surface-1'); for(const z in GEO.zones) x.fill(new Path2D(GEO.zones[z].d));
+  x.imageSmoothingQuality='high'; x.drawImage(lsRender(v,true),VB[0],VB[1],W*LS.cell,H*LS.cell);
+  x.lineWidth=0.6/k*1.2; x.strokeStyle='rgba(40,30,20,.35)'; for(const [lv,d] of Object.entries(ct)) if(d&&+lv!==0) x.stroke(new Path2D(d));
+  x.lineWidth=1.6/k*1.2; x.strokeStyle='rgba(20,20,20,.8)'; if(ct[0]) x.stroke(new Path2D(ct[0]));
+  x.lineWidth=1.1/k*1.2; x.strokeStyle=css('--text-muted'); x.setLineDash([4,3]); const seen=new Set();
+  for(const u of R.units){ if(u.lx==null||!(u.mw>5)) continue; const key=u.x+','+u.y; if(seen.has(key)) continue; seen.add(key); x.beginPath(); x.moveTo(u.x,u.y); x.lineTo(u.lx,u.ly); x.stroke(); }
+  x.setLineDash([]);
+  x.lineWidth=1/k*1.2; x.strokeStyle='rgba(25,25,25,.45)'; for(const l of GEO.land) if(l.name!=='United Kingdom') x.stroke(new Path2D(l.d));
+  // GB coastline from the region shapes: stroke them all, then cut away everything inside, leaving only the outer edge
+  const e=document.createElement('canvas'); e.width=TW; e.height=TH; const y=e.getContext('2d'); y.setTransform(k,0,0,k,-VB[0]*k,-VB[1]*k);
+  y.lineWidth=2.4/k*1.2; y.strokeStyle='rgba(20,20,20,.8)'; const zp=Object.values(GEO.zones).map(z=>new Path2D(z.d)); for(const q of zp) y.stroke(q);
+  y.globalCompositeOperation='destination-out'; for(const q of zp) y.fill(q);
+  x.setTransform(1,0,0,1,0,0); x.drawImage(e,0,0);
+  return cv; }
+async function draw3d(v,ct){ const my=lsSeq;
+  if(!T3){ box3d.innerHTML='<div class="msg">Loading 3D view…</div>';
+    let THREE, OC; try{ [THREE,{OrbitControls:OC}]=await loadThree(); }catch(e){ box3d.innerHTML='<div class="msg err">Could not load the 3D view ('+e.message+'). The flat view still works.</div>'; return; }
+    if(LS.dim!=='3d') return;
+    const {W,H}=LS.grid, r=box3d.getBoundingClientRect(), ren=new THREE.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(2,devicePixelRatio)); ren.setSize(r.width,r.height,false);
+    box3d.innerHTML=''; box3d.appendChild(ren.domElement);
+    const scene=new THREE.Scene(); scene.background=new THREE.Color(css('--sea')); const cam=new THREE.PerspectiveCamera(35,r.width/r.height,5,8000);
+    const geo=new THREE.PlaneGeometry(W*LS.cell,H*LS.cell,W-1,H-1), tex=new THREE.CanvasTexture(document.createElement('canvas'));
+    tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=4;
+    const mat=new THREE.MeshLambertMaterial({map:tex}), mesh=new THREE.Mesh(geo,mat); mesh.rotation.x=-Math.PI/2; scene.add(mesh);
+    // centre on GB rather than the whole map box
+    const cx=VB[0]+W*LS.cell/2, cy=VB[1]+H*LS.cell/2; mesh.position.set(cx-450,0,cy-640);
+    scene.add(new THREE.HemisphereLight(0xffffff,0x8a8a80,1.6)); const sun=new THREE.DirectionalLight(0xffffff,1.6); sun.position.set(-600,700,-500); scene.add(sun);
+    const fit=()=>{ const q=box3d.getBoundingClientRect(), asp=q.width/q.height, d=Math.max(1000,760/asp*1.25)/(2*Math.tan(17.5*Math.PI/180)), tl=38*Math.PI/180;
+      cam.position.set(-95,d*Math.cos(tl),95+d*Math.sin(tl)); ctl.target.set(-95,0,95); ctl.update(); };   // whole of GB, tilted 52° from overhead, looking north
+    const ctl=new OC(cam,ren.domElement); ctl.maxPolarAngle=Math.PI*0.47; ctl.minDistance=120; ctl.maxDistance=2600; ctl.enablePan=true; ctl.screenSpacePanning=false;
+    const render=()=>ren.render(scene,cam); ctl.addEventListener('change',render); fit();
+    new ResizeObserver(()=>{ const q=box3d.getBoundingClientRect(); if(!q.width) return; ren.setSize(q.width,q.height,false); cam.aspect=q.width/q.height; cam.updateProjectionMatrix(); render(); }).observe(box3d);
+    T3={THREE,geo,tex,render,mat,fit}; }
+  if(my!==lsSeq||LS.dim!=='3d') return;
+  const pos=T3.geo.attributes.position, raw=LS.raw, Z=48;    // vertical scale: full height = 48 km (exaggerated)
+  for(let i=0;i<pos.count;i++) pos.setZ(i,Math.max(-1.05,Math.min(1.6,raw[i]))*Z);
+  pos.needsUpdate=true; T3.geo.computeVertexNormals();
+  const old=T3.tex; T3.tex=new T3.THREE.CanvasTexture(texture3d(v,ct)); T3.tex.colorSpace=T3.THREE.SRGBColorSpace; T3.tex.anisotropy=4; T3.mat.map=T3.tex; T3.mat.needsUpdate=true; old.dispose();
+  T3.render(); }
+function setDim(d){ LS.dim=d; document.querySelectorAll('.dimctl button').forEach(b=>{ b.classList.toggle('on',b.dataset.d===d); b.setAttribute('aria-pressed',b.dataset.d===d); });
+  const on=d==='3d'&&LS.view==='land'; box3d.style.height=svg.getBoundingClientRect().height+'px'; box3d.hidden=!on; svg.style.visibility=on?'hidden':''; document.querySelector('.zoomctl').style.visibility=on?'hidden':''; document.querySelector('.landtext').dataset.d=d;
+  if(LS.view==='land'){ try{ history.replaceState(null,'',d==='3d'?'#landscape3d':'#landscape'); }catch(e){} }
+  if(on) drawLandscape(); }
+document.querySelectorAll('.dimctl button').forEach(b=>b.onclick=()=>setDim(b.dataset.d));
+function setView(vw){ LS.view=vw; svg.classList.toggle('land',vw==='land'); document.querySelectorAll('.viewctl:not(.dimctl) button').forEach(b=>{ b.classList.toggle('on',b.dataset.v===vw); b.setAttribute('aria-pressed',b.dataset.v===vw); });
   document.querySelector('.flowopts').style.display=vw==='land'?'none':''; document.querySelector('.landnote').style.display=vw==='land'?'block':'';
   document.querySelector('.lg-land').style.display=vw==='land'?'block':''; document.querySelector('.lg-flows').style.display=vw==='land'?'none':'';
   svg.setAttribute('aria-label',vw==='land'?'Relief map of Great Britain: hills where more electricity is made than used, valleys where more is used':'Map of Great Britain showing estimated power flows between regions');
-  hideTip(); if(vw==='land') drawLandscape(); try{ history.replaceState(null,'',vw==='land'?'#landscape':location.pathname+location.search); }catch(e){} }
-document.querySelectorAll('.viewctl button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+  hideTip(); setDim(LS.dim); if(vw==='land') drawLandscape(); try{ history.replaceState(null,'',vw==='land'?(LS.dim==='3d'?'#landscape3d':'#landscape'):location.pathname+location.search); }catch(e){} }
+document.querySelectorAll('.viewctl:not(.dimctl) button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 function draw(){ M=money(); colourZones(); drawLayers(); panel(); moneyPanel(); drawLandscape(); }
 function drawLayers(){
   gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML=''; gCable.innerHTML='';
@@ -2128,7 +2187,7 @@ document.getElementById('tBal').onchange=e=>svg.classList.toggle('hide-bal',!e.t
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.closest('.plant,.balmark')) hideTip(); });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
-select(fromHash||'_C',!fromHash); updateLegendMoney(); if(location.hash==='#landscape') setView('land');
+select(fromHash||'_C',!fromHash); updateLegendMoney(); if(location.hash==='#landscape3d'){ LS.dim='3d'; setView('land'); } else if(location.hash==='#landscape') setView('land');
 run(); setInterval(()=>{ if(offset===0) run(); },5*60000);
 })();
 </script>
