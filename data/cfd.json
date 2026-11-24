@@ -1,0 +1,1182 @@
+{
+"_source": "Low Carbon Contracts Company data portal (dp.lowcarboncontracts.uk)",
+"_asof": "2026-11-12",
+"C__PSMAR001": [
+{
+"id": "AAA-ACH-183",
+"n": "Achlachan Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BDCHW-1": [
+{
+"id": "AAA-BAD-185",
+"n": "Bad A Cheo Wind Farm",
+"s": 120.46,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_KPMRW-1": [
+{
+"id": "AAA-BAN-189",
+"n": "Kype Muir Wind Farm",
+"s": 120.28,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__FCMRO003": [
+{
+"id": "AAA-BAN-190",
+"n": "Moor House Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_MIDMW-1": [
+{
+"id": "AAA-BAN-192",
+"n": "Middle Muir Wind Farm",
+"s": 120.28,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__DSMAR010": [
+{
+"id": "AAA-BRE-177",
+"n": "Brenig Wind Farm",
+"s": 116.96,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__DSPOW010": [
+{
+"id": "AAA-BRE-177",
+"n": "Brenig Wind Farm",
+"s": 116.96,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__ACMRO002": [
+{
+"id": "AAA-CAM-197",
+"n": "Triangle Farm Solar Park",
+"s": 116.96,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__DEDGE014": [
+{
+"id": "AAA-CLO-186",
+"n": "Clocaenog Forest Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__PIMPO008": [
+{
+"id": "AAA-COI-196",
+"n": "Coire Na Cloiche Windfarm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"E_CNCLW-1": [
+{
+"id": "AAA-COI-196",
+"n": "Coire Na Cloiche Windfarm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__ASTAT009": [
+{
+"id": "AAA-COM-191",
+"n": "Common Barn Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DOREW-1": [
+{
+"id": "AAA-DOR-182",
+"n": "Dorenell Wind Farm",
+"s": 120.28,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DOREW-2": [
+{
+"id": "AAA-DOR-182",
+"n": "Dorenell Wind Farm",
+"s": 120.28,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__JVETS001": [
+{
+"id": "AAA-K3C-180",
+"n": "K3 CHP Facility",
+"s": 118.1,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"C__DTGPL001": [
+{
+"id": "AAA-LIG-176",
+"n": "Charity Farm",
+"s": 116.96,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__KEDGE004": [
+{
+"id": "AAA-MYN-178",
+"n": "Mynydd Y Gwair Wind Farm",
+"s": 118.08,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__PPURE011": [
+{
+"id": "AAA-NAN-184",
+"n": "Nanclach Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__PSTAT011": [
+{
+"id": "AAA-NAN-184",
+"n": "Nanclach Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_NNGAO-1": [
+{
+"id": "AAA-NEA-195",
+"n": "Neart na Gaoithe",
+"s": 167.68,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_NNGAO-2": [
+{
+"id": "AAA-NEA-195",
+"n": "Neart na Gaoithe",
+"s": 167.68,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_TRLGW-1": [
+{
+"id": "AAA-PNE-187",
+"n": "Tralorg Wind Farm",
+"s": 120.28,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__NRWED014": [
+{
+"id": "AAA-SNE-179",
+"n": "Sneddon Law Community Wind Farm",
+"s": 118.08,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__NVETS013": [
+{
+"id": "AAA-SOL-181",
+"n": "Solwaybank Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"E_SWBKW-1": [
+{
+"id": "AAA-SOL-181",
+"n": "Solwaybank Wind Farm",
+"s": 121.79,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWBO-1": [
+{
+"id": "AR2-HRN-106",
+"n": "Hornsea Project 2 Phase 1",
+"s": 82.49,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWBO-3": [
+{
+"id": "AR2-HRN-206",
+"n": "Hornsea Project 2 Phase 2",
+"s": 82.49,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWBO-2": [
+{
+"id": "AR2-HRN-306",
+"n": "Hornsea Project 2 Phase 3",
+"s": 82.49,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_MOWEO-1": [
+{
+"id": "AR2-MRY-107",
+"n": "Moray Offshore Windfarm (East) Phase 1",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-207",
+"n": "Moray Offshore Windfarm (East) Phase 2",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-307",
+"n": "Moray Offshore Windfarm (East) Phase 3",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_MOWEO-2": [
+{
+"id": "AR2-MRY-107",
+"n": "Moray Offshore Windfarm (East) Phase 1",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-207",
+"n": "Moray Offshore Windfarm (East) Phase 2",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-307",
+"n": "Moray Offshore Windfarm (East) Phase 3",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_MOWEO-3": [
+{
+"id": "AR2-MRY-107",
+"n": "Moray Offshore Windfarm (East) Phase 1",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-207",
+"n": "Moray Offshore Windfarm (East) Phase 2",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-MRY-307",
+"n": "Moray Offshore Windfarm (East) Phase 3",
+"s": 82.34,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_TKNEW-1": [
+{
+"id": "AR2-TKN-103",
+"n": "Triton Knoll Offshore Wind Farm Phase 1",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-TKN-203",
+"n": "Triton Knoll Offshore Wind Farm Phase 2",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-TKN-303",
+"n": "Triton Knoll Offshore Wind Farm Phase 3",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_TKNWW-1": [
+{
+"id": "AR2-TKN-103",
+"n": "Triton Knoll Offshore Wind Farm Phase 1",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-TKN-203",
+"n": "Triton Knoll Offshore Wind Farm Phase 2",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "AR2-TKN-303",
+"n": "Triton Knoll Offshore Wind Farm Phase 3",
+"s": 108.2,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"C__BSMAE030": [
+{
+"id": "AR4-ADS-700",
+"n": "Adstock",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BSTAT015": [
+{
+"id": "AR4-ASF-700",
+"n": "Alfreton Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ASMAE053": [
+{
+"id": "AR4-BFS-700",
+"n": "Bracks Farm Solar Park",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HGMTR021": [
+{
+"id": "AR4-BHL-700",
+"n": "Bunkers Hill",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ASMAE046": [
+{
+"id": "AR4-BRN-700",
+"n": "Braintree",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ASMAE031": [
+{
+"id": "AR4-BSL-700",
+"n": "Basildon",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ESTAT019": [
+{
+"id": "AR4-BSP-700",
+"n": "Bishampton Solar PV",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HSMAE048": [
+{
+"id": "AR4-CLF-700",
+"n": "CLIFTON",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"T_CLVHS-1": [
+{
+"id": "AR4-CLH-710",
+"n": "Cleve Hill Solar Project",
+"s": 62.99,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__KFSEN024": [
+{
+"id": "AR4-CNS-700",
+"n": "Carn Nicholas Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__MLOND039": [
+{
+"id": "AR4-DRF-700",
+"n": "Driffield",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__EEDGE027": [
+{
+"id": "AR4-DVR-700",
+"n": "Doverdale",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BGMTR028": [
+{
+"id": "AR4-EST-700",
+"n": "Eastfields",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__LVETS036": [
+{
+"id": "AR4-HFS-700",
+"n": "Houndbeare Farm Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BLOND051": [
+{
+"id": "AR4-IGS-700",
+"n": "Inkersall Grange Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BSTAT017": [
+{
+"id": "AR4-LFS-700",
+"n": "Low Farm Solar Park",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__LSTAT020": [
+{
+"id": "AR4-LSF-700",
+"n": "Litchardon Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ASMAE033": [
+{
+"id": "AR4-LYR-700",
+"n": "Layer",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BFSEN025": [
+{
+"id": "AR4-MFS-700",
+"n": "Bicker Fen Solar Limited",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BLOND018": [
+{
+"id": "AR4-NEL-700",
+"n": "Whitecross Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ALOND079": [
+{
+"id": "AR4-NEX-700",
+"n": "NEXTPOWER PENTLOW LIMITED",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ATGPL079": [
+{
+"id": "AR4-NEX-700",
+"n": "NEXTPOWER PENTLOW LIMITED",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BLOND078": [
+{
+"id": "AR4-NXP-700",
+"n": "NEXTPOWER CRIFTON LIMITED",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BTGPL078": [
+{
+"id": "AR4-NXP-700",
+"n": "NEXTPOWER CRIFTON LIMITED",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__AMRCY042": [
+{
+"id": "AR4-OSF-700",
+"n": "Oulton Solar Farm Phase 2",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__EENDC061": [
+{
+"id": "AR4-RLS-700",
+"n": "Rag Lane Solar",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ASMAE032": [
+{
+"id": "AR4-SCL-700",
+"n": "St Cleres",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__MSTAT041": [
+{
+"id": "AR4-SDS-700",
+"n": "Scurf Dyke Solar",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__ALOND047": [
+{
+"id": "AR4-SFH-700",
+"n": "South Fambridge Hall Solar",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HSTAT016": [
+{
+"id": "AR4-SID-700",
+"n": "Siddington Solar Park",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HFSEN026": [
+{
+"id": "AR4-SSF-700",
+"n": "Stokeford Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BSMAE034": [
+{
+"id": "AR4-STV-700",
+"n": "Staveley",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__KVETS037": [
+{
+"id": "AR4-TSF-700",
+"n": "Tycroes solar farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BEXGL023": [
+{
+"id": "AR4-YSF-700",
+"n": "Yelvertoft Solar Farm",
+"s": 67.89,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__LFSEN043": [
+{
+"id": "AR5-ALS-700",
+"n": "Aller Langport Solar Park",
+"s": 69.38,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"T_BENBW-1": [
+{
+"id": "AR5-BWI-610",
+"n": "Benbrack Wind Farm",
+"s": 77.73,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+},
+{
+"id": "AR6-BEN-610",
+"n": "Benbrack Wind Farm - AR6 - A3",
+"s": 75.66,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+},
+{
+"id": "AR6-BWA-610",
+"n": "Benbrack Wind Farm - AR6 - A2",
+"s": 75.66,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HGMTR064": [
+{
+"id": "AR5-KEK-700",
+"n": "Kemb04 Kemble",
+"s": 69.38,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HFSEN045": [
+{
+"id": "AR5-PRS-700",
+"n": "Preston Farm Solar Park",
+"s": 69.38,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HSMAE044": [
+{
+"id": "AR5-RWS-700",
+"n": "Rampisham Woods Solar",
+"s": 69.38,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__BFSEN074": [
+{
+"id": "AR6-CHE-700",
+"n": "Chestnut Solar Farm",
+"s": 73.91,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__AGMTR066": [
+{
+"id": "AR6-CHS-700",
+"n": "Crays Hall Solar Farm",
+"s": 73.91,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"T_CRYRW-4": [
+{
+"id": "AR6-CRI-610",
+"n": "Crystal Rig IV Ltd",
+"s": 75.66,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__NLOND077": [
+{
+"id": "AR6-EDW-600",
+"n": "Easter Drumclair wind farm",
+"s": 75.14,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__LRWED056": [
+{
+"id": "AR6-HLS-700",
+"n": "Horsey Level Solar Park",
+"s": 73.91,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"C__HRWED054": [
+{
+"id": "AR6-KFS-700",
+"n": "Kiln Fields Solar Park",
+"s": 73.91,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"E_KHLLW-1": [
+{
+"id": "AR6-KHW-600",
+"n": "Kirk Hill Wind Farm",
+"s": 75.14,
+"ref": "IMRP",
+"b": null,
+"neg0": true
+}
+],
+"T_EAAO-1": [
+{
+"id": "CAA-EAS-166",
+"n": "EA 1, Phase 1",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "CAA-EAS-167",
+"n": "EA 1, Phase 2",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "CAA-EAS-168",
+"n": "EA 1, Phase 3",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_EAAO-2": [
+{
+"id": "CAA-EAS-166",
+"n": "EA 1, Phase 1",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "CAA-EAS-167",
+"n": "EA 1, Phase 2",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+},
+{
+"id": "CAA-EAS-168",
+"n": "EA 1, Phase 3",
+"s": 176.12,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BEATD-1": [
+{
+"id": "INV-BEA-001",
+"n": "Beatrice Offshore Wind Farm Limited (Phase 1)",
+"s": 205.7,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BEATO-1": [
+{
+"id": "INV-BEA-001",
+"n": "Beatrice Offshore Wind Farm Limited (Phase 1)",
+"s": 205.7,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BEATO-2": [
+{
+"id": "INV-BEA-001",
+"n": "Beatrice Offshore Wind Farm Limited (Phase 1)",
+"s": 205.7,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BEATO-3": [
+{
+"id": "INV-BEA-002",
+"n": "Beatrice Offshore Wind Farm Limited (Phase 2)",
+"s": 205.7,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BEATO-4": [
+{
+"id": "INV-BEA-002",
+"n": "Beatrice Offshore Wind Farm Limited (Phase 2)",
+"s": 205.7,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_BRBEO-1": [
+{
+"id": "INV-BUR-001",
+"n": "Burbo Bank Extension Offshore Wind Farm",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"E__MDRX001": [
+{
+"id": "INV-DRX-001",
+"n": "Drax 3rd conversion unit (unit 1)",
+"s": 146.51,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"E__MDRX002": [
+{
+"id": "INV-DRX-001",
+"n": "Drax 3rd conversion unit (unit 1)",
+"s": 146.51,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"T_DRAXX-1": [
+{
+"id": "INV-DRX-001",
+"n": "Drax 3rd conversion unit (unit 1)",
+"s": 146.51,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"T_DDGND-1": [
+{
+"id": "INV-DUD-001",
+"n": "Dudgeon Phase 1",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DDGNO-2": [
+{
+"id": "INV-DUD-001",
+"n": "Dudgeon Phase 1",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DDGNO-1": [
+{
+"id": "INV-DUD-002",
+"n": "Dudgeon Phase 2",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DDGNO-3": [
+{
+"id": "INV-DUD-002",
+"n": "Dudgeon Phase 2",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_DDGNO-4": [
+{
+"id": "INV-DUD-003",
+"n": "Dudgeon Phase 3",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWAO-2": [
+{
+"id": "INV-HOR-001",
+"n": "Hornsea Offshore Wind Farm Phase 1",
+"s": 206.06,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWAO-3": [
+{
+"id": "INV-HOR-002",
+"n": "Hornsea Offshore Wind Farm Phase 2",
+"s": 206.06,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_HOWAO-1": [
+{
+"id": "INV-HOR-003",
+"n": "Hornsea Offshore Wind Farm Phase 3",
+"s": 206.06,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"E_LYNE1": [
+{
+"id": "INV-LYN-001",
+"n": "Lynemouth Power Station",
+"s": 153.72,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"E_LYNE2": [
+{
+"id": "INV-LYN-001",
+"n": "Lynemouth Power Station",
+"s": 153.72,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"E_LYNE3": [
+{
+"id": "INV-LYN-001",
+"n": "Lynemouth Power Station",
+"s": 153.72,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"C__FNATP012": [
+{
+"id": "INV-TEE-001",
+"n": "Teesside Renewable Energy Project",
+"s": 183.45,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"T_TSREP-1": [
+{
+"id": "INV-TEE-001",
+"n": "Teesside Renewable Energy Project",
+"s": 183.45,
+"ref": "BMRP",
+"b": 114.5,
+"neg0": false
+}
+],
+"T_WLNYO-3": [
+{
+"id": "INV-WAL-001",
+"n": "Walney Extension Offshore Wind Farm Phase 1",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+],
+"T_WLNYO-4": [
+{
+"id": "INV-WAL-002",
+"n": "Walney Extension Offshore Wind Farm Phase 2",
+"s": 220.95,
+"ref": "IMRP",
+"b": null,
+"neg0": false
+}
+]
+}

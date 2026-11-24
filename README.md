@@ -16,6 +16,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 - Tap a power station or £ mark to see its details; on a phone this no longer jumps down to the region panel.
 - Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as up or down block arrows with a £ inside, sized by amount, a national summary, the largest payments and a per-region line.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
+- **Money in / out:** a fourth colouring that shows the £ for the half-hour instead of the MW: gold arrows run against the power (the importing region pays the exporting one, GB pays abroad for imports), regions are coloured by net £ received or paid, and each region's panel breaks it down into wholesale, CfD difference payments and balancing, with its share of the CfD levy and balancing costs.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.
 
@@ -33,6 +34,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 | Carbon intensity | Approximate emission factors (after NESO's Carbon Intensity API methodology); a separate factor for each interconnector's country | Applied to the traced fuel mix. |
 | Prices | Elexon market index data (APX) and system prices | National figures; no regional price exists in GB. |
 | Balancing payments | Elexon indicative bid and offer cashflows per BM unit | Summed per unit; offers = paid to increase output, positive bids = paid to reduce (typically wind), negative bids = paid back (fuel not burnt). Latest published half-hour in live view. |
+| Money | Market index price; LCCC current CfD strike prices and CfD→BM unit mapping (`data/cfd.json`, built by `scripts/build_cfd.py`); balancing cashflows above | Wholesale = MWh × market index for use and generation; CfD = (strike − reference price) × output per contracted unit (no payment at negative prices for AR4+), funded by all demand pro rata; balancing funded by all demand pro rata. Sums to zero with money paid abroad. About 1.3 GW of small distribution-connected CfDs are not counted. |
 | Check | NESO day-ahead constraint flows (SCOTEX / B6) | Shown beside the model's Scotland→England flow. |
 
 ### Limitations
@@ -52,7 +54,8 @@ data/geo.json              projected DNO areas, coastline, plant locations, inte
 data/manual_locations.json hand-located BM units
 scripts/fetch_inputs.sh    downloads build inputs into ./inputs (NESO DNO GeoJSON, Elexon BMU reference, Power Station Dictionary, world-atlas)
 scripts/build_geo.py       builds data/geo.json from ./inputs
-scripts/assemble.py        inlines geo.json and model.js into index.html
+scripts/build_cfd.py       builds data/cfd.json from the LCCC data portal (re-run when contracts start, and after April indexation)
+scripts/assemble.py        inlines geo.json, cfd.json and model.js into index.html
 ```
 
 ## Rebuilding
@@ -60,14 +63,17 @@ scripts/assemble.py        inlines geo.json and model.js into index.html
 ```
 scripts/fetch_inputs.sh
 python3 scripts/build_geo.py
+python3 scripts/build_cfd.py
 python3 scripts/assemble.py
 ```
 
-Only needed when plant locations or boundaries change; the page itself fetches live data on load.
+Only needed when plant locations, boundaries or CfD contracts change; the page itself fetches live data on load.
 
 ## Data licences
 
 - Elexon BMRS data: Elexon BMRS licence.
 - NESO data: NESO Open Data Licence.
 - Power Station Dictionary: see the OSUKED repository.
+- CfD data: Low Carbon Contracts Company data portal (Open Government Licence).
+- Location checks: Wikidata (CC0) and DESNZ Renewable Energy Planning Database (Open Government Licence).
 - Coastlines: Natural Earth (public domain).

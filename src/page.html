@@ -21,7 +21,7 @@
   --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7c7b76;
   --border:#dddbd5; --sea:#e9eef3; --land-abroad:#e2e0da; --zone-stroke:#ffffff;
   --div-neg:#2a78d6; --div-mid:#f0efec; --div-pos:#e34948;
-  --flow:#2b2a28; --flow-ic:#9a6ee0; --plant-edge:rgba(0,0,0,.45); --carbon:#5b3a1f;
+  --flow:#2b2a28; --flow-ic:#9a6ee0; --money:#a87400; --plant-edge:rgba(0,0,0,.45); --carbon:#5b3a1f;
   /* fuel palette: 7 categories, checked pairwise (OKLab ΔE ≥ ~14 normal vision); nuclear yellow, gas teal (flame), solar orange */
   --f-wind:#2a78d6; --f-gas:#0fb5c0; --f-nuclear:#e8bf00; --f-solar:#e05a1f;
   --f-biomass:#178a3c; --f-imports:#9a6ee0; --f-other:#6f6e69;
@@ -33,7 +33,7 @@
     --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
     --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
     --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-    --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c;
+    --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c; --money:#e0b44a;
     --f-wind:#3987e5; --f-gas:#2cc6d0; --f-nuclear:#f2d230; --f-solar:#e2682f;
     --f-biomass:#22a34a; --f-imports:#a99cf2; --f-other:#8d8c84;
   }
@@ -44,7 +44,7 @@
   --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
   --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
   --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-  --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c;
+  --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c; --money:#e0b44a;
   --f-wind:#3987e5; --f-gas:#2cc6d0; --f-nuclear:#f2d230; --f-solar:#e2682f;
   --f-biomass:#22a34a; --f-imports:#a99cf2; --f-other:#8d8c84;
 }
@@ -67,6 +67,10 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .ukbase{fill:var(--land-abroad)}
 .zlabel{font-size:calc(19px / var(--k,1));fill:var(--text-secondary);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;font-weight:500}
 .flow{fill:none;stroke:var(--flow);stroke-linecap:round;opacity:.85}
+.flow.money{stroke:var(--money)}
+.mlabel{font-size:calc(18px / var(--k,1));font-weight:650;fill:var(--money);text-anchor:middle;paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;pointer-events:none}
+.hide-labels .mlabel{display:none}
+.mtab{width:100%;border-collapse:collapse;font-size:12.5px}.mtab td{padding:2px 0;color:var(--text-secondary)}.mtab td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-primary)}.mtab tr.tot td{border-top:1px solid var(--border);font-weight:650;padding-top:4px;color:var(--text-primary)}
 .flowanim{fill:none;stroke:var(--surface-1);stroke-linecap:round;stroke-dasharray:1 26;animation:dash linear infinite}
 .icflow{stroke:var(--flow-ic)}
 @keyframes dash{to{stroke-dashoffset:-27}}
@@ -168,14 +172,16 @@ a{color:var(--div-neg)}
         <label><input type="radio" name="mode" value="balance" checked> Export / import</label>
         <label><input type="radio" name="mode" value="carbon"> Carbon intensity</label>
         <label><input type="radio" name="mode" value="origin"> Supply to selected region</label>
+        <label><input type="radio" name="mode" value="money"> Money in / out (£)</label>
       </div>
     </div>
     <div class="legend">
       <div id="lgTitle"><b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)</div>
       <div class="ramp" id="lgRamp"></div>
       <div class="ends" id="lgEnds"><span>importing</span><span>balanced</span><span>exporting</span></div>
-      <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow)" stroke-width="4" stroke-linecap="round"/></svg>inter-regional flow (width ∝ MW)</div>
-      <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
+      <div class="row lg-power"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow)" stroke-width="4" stroke-linecap="round"/></svg>inter-regional flow (width ∝ MW)</div>
+      <div class="row lg-money" style="display:none"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--money)" stroke-width="4" stroke-linecap="round"/></svg>£ paid for power, flowing against it</div>
+      <div class="row lg-power"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="4 3"/></svg>offshore wind cable to where it comes ashore (and is counted)</div>
       <div class="fkeys" id="fkeys"></div>
@@ -195,12 +201,14 @@ a{color:var(--div-neg)}
     <div class="pchart" id="pchart" title="Click to jump to that half-hour"></div>
     <div class="pkeys"><span><i style="border-color:var(--text-primary)"></i>Wholesale (market index)</span><span><i style="border-color:var(--f-imports);border-top-style:dashed"></i>Imbalance price</span></div>
     <div id="balpanel"></div>
+    <div id="moneypanel"></div>
     <div id="zonepanel"><h2>Pick a region</h2><p class="hint">Click a region on the map to see an estimate of where its electricity is coming from.</p></div>
     <h2>Flows across the main boundaries</h2>
     <div id="flowtable"></div>
     <details>
       <summary>How this is worked out, and its limits</summary>
       <p><b>Supply by place.</b> Every unit in the Balancing Mechanism reports a Physical Notification (its planned output, minute by minute). Where the system operator has instructed a unit to change (a bid-offer acceptance, e.g. curtailing Scottish wind), the accepted level is used instead. Units are located from the open <a href="https://github.com/OSUKED/Power-Station-Dictionary" target="_blank" rel="noopener">Power Station Dictionary</a>, supplemented by hand for newer plant; offshore wind is assigned to the region where it lands. These outputs are scaled so the total matches Elexon's 5-minute metered generation (FUELINST).</p>
+      <p><b>Money in / out.</b> An accounting picture of who pays whom for one half-hour, not a record of actual bills. Each region pays the market index price for the electricity it uses and is paid it for what it generates; imports are paid abroad, exports paid for from abroad, so the money runs against the power and adds up to zero. On top: Contract for Difference payments, estimated as (strike price − market price) × output for each unit with a live contract (current indexed strike prices from the <a href="https://dp.lowcarboncontracts.uk/" target="_blank" rel="noopener">Low Carbon Contracts Company</a>; negative when the price is above strike and generators pay back; about 1.3 GW of small distribution-connected contracts not counted), and balancing payments to particular units. Both are recovered from all consumers in proportion to use, so each region pays a share. Real bills use hedged contract prices, network charges and other levies not shown here.</p>
       <p><b>Small, local generation.</b> NESO's embedded wind and solar estimates (national totals) are shared between regions in proportion to an indicative capacity distribution.</p>
       <p><b>Demand by place.</b> National demand is everything generated plus net imports, less storage charging. It is shared between the 14 distribution areas using suppliers' own half-hourly demand notifications for each area, which gives a live regional shape.</p>
       <p><b>Flows.</b> Each region's surplus or deficit is passed across a reduced 23-path network with a DC power-flow approximation, using rough transfer capabilities as weights. That gives a <i>pattern</i> of flow, not the flow on any real circuit. The Western HVDC link is treated as an ordinary path, although in reality it is set by the operator.</p>
@@ -213,6 +221,7 @@ a{color:var(--div-neg)}
   </aside>
 </main>
 <script>/*GEO*/</script>
+<script>/*CFD*/</script>
 <script>/*MODEL*/</script>
 <script>
 (function(){
@@ -307,7 +316,7 @@ const row=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
 
 let R=null, selected=null, daRef=null;
 function zoneTip(z){ if(!R)return `<b>${ZN[z]}</b>`; const q=R.zones[z];
-  return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net))+row('Carbon intensity',Math.round(zoneCI(z))+' g/kWh'); }
+  return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net))+row('Carbon intensity',Math.round(zoneCI(z))+' g/kWh')+(M&&M.Z[z]?row('Money, net for the half-hour',(M.Z[z].net>=0?'+':'')+gbp(M.Z[z].net)):''); }
 
 // ---------- data
 async function j(url,ms=25000){ const r=await fetch(url,{signal:AbortSignal.timeout?AbortSignal.timeout(ms):undefined}); if(!r.ok) throw new Error(r.status+' '+url.split('?')[0]); return r.json(); }
@@ -385,7 +394,7 @@ async function loadExtras(my){
   try{ await loadPrices(); }catch(e){ console.warn('prices',e); }
   let b=null; try{ b=await balFor(R); }catch(e){}
   if(my!==loadSeq) return;
-  BAL=b; drawBal(); pricePanel(); if(selected) zonePanel(selected);
+  BAL=b; M=money(); drawBal(); pricePanel(); moneyPanel(); colourZones(); if(mode==='money') drawLayers(); if(selected) zonePanel(selected);
 }
 function balSummary(units){ let up=0,downPaid=0,downBack=0,vUp=0,vDownPaid=0,vDownBack=0;
   for(const u of units){ if(u.offer>0){ up+=u.offer; vUp+=u.voffer; } if(u.bid>0){ downPaid+=u.bid; vDownPaid-=u.vbid; } else if(u.bid<0){ downBack-=u.bid; vDownBack-=u.vbid; } }
@@ -513,7 +522,7 @@ const width=mw=>(2+Math.min(16,Math.abs(mw)/420))/K;
 function arrowHead(g,path,mw,cls){ // chevron at the middle of a path, pointing along flow
   const L=path.getTotalLength(); const p=path.getPointAtLength(L*0.55), q=path.getPointAtLength(L*0.55+1);
   const ang=Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI; const s=6/K+width(mw)*0.9;
-  el('path',{d:`M${-s},${-s} L${s*0.6},0 L${-s},${s}`,transform:`translate(${p.x},${p.y}) rotate(${ang})`,fill:'none',stroke:cls==='ic'?'var(--flow-ic)':'var(--flow)','stroke-width':2.4/K,'stroke-linecap':'round','stroke-linejoin':'round'},g);
+  el('path',{d:`M${-s},${-s} L${s*0.6},0 L${-s},${s}`,transform:`translate(${p.x},${p.y}) rotate(${ang})`,fill:'none',stroke:cls==='ic'?'var(--flow-ic)':cls==='money'?'var(--money)':'var(--flow)','stroke-width':2.4/K,'stroke-linecap':'round','stroke-linejoin':'round'},g);
 }
 // Approximate emission factors (gCO2/kWh), after NESO Carbon Intensity API methodology
 const EF={Wind:0,Solar:0,Nuclear:0,Hydro:0,Storage:0,Biomass:120,Gas:394,Other:300};
@@ -527,13 +536,50 @@ function colourZones(){
   for(const [z,p] of Object.entries(zonePaths)){ const q=R.zones[z];
     if(mode==='balance') p.style.fill=divColor(q.net/Math.max(q.demand,300));
     else if(mode==='carbon') p.style.fill=seq(zoneCI(z)/300,'var(--carbon)');
+    else if(mode==='money') p.style.fill=M?divColor(M.Z[z].net/Math.max(Math.abs(M.Z[z].use),20000)):'var(--div-mid)';
     else p.style.fill=z===selected?'var(--div-neg)':seq(Math.sqrt((R.mix[selected]||{})[z]||0)/Math.sqrt(0.5),'var(--div-neg)');
   }
   if(mode==='balance'){ lgT.innerHTML='<b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)'; lgR.style.background='linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))'; lgE.innerHTML='<span>importing</span><span>balanced</span><span>exporting</span>'; }
   else if(mode==='carbon'){ lgT.innerHTML='<b style="color:var(--text-primary)">Carbon intensity</b> of each region’s supply'; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--carbon))'; lgE.innerHTML='<span>0</span><span>150</span><span>300+ g/kWh</span>'; }
+  else if(mode==='money'){ lgT.innerHTML=`<b style="color:var(--text-primary)">Money in / out</b>, net £ ÷ its electricity bill${M?'':' (waiting for prices)'}`; lgR.style.background='linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))'; lgE.innerHTML='<span>paying out</span><span>even</span><span>receiving</span>'; }
   else { lgT.innerHTML=`<b style="color:var(--text-primary)">Share of ${ZN[selected]}’s supply</b> by region of origin`; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--div-neg))'; lgE.innerHTML='<span>0%</span><span>12%</span><span>50%+</span>'; }
 }
-function draw(){ colourZones(); drawLayers(); panel(); }
+// ---------- money: who pays whom for the half-hour (£). Accounting convention, like the flow tracing.
+// Wholesale: every MWh used is paid for at the market index price, every MWh generated is paid it; imports are paid abroad.
+// CfD: generators on a Contract for Difference get (strike − reference price) on top, or pay it back when the price is above strike;
+//      the levy that funds it is paid by suppliers in proportion to the electricity they supply.
+// Balancing: payments by the system operator to particular units, recovered from demand through BSUoS.
+function priceFor(t){ if(!PRICES||!PRICES.length) return null; const at=PRICES.filter(o=>o.t<=t&&o.mid!=null); const o=at[at.length-1]; return o?{P:o.mid,t:o.t}:null; }
+function money(){
+  if(!R) return null; const pr=priceFor(R.spStart); if(!pr) return null;
+  const P=pr.P, h=0.5, Z={}; let dTot=0;
+  for(const z in R.zones){ const q=R.zones[z]; const exp=R.ics.filter(c=>c.zone===z&&c.mw<0).reduce((a,c)=>a-c.mw,0), stor=Math.max(0,q.charge-exp);
+    Z[z]={use:(q.demand+stor)*h*P, sell:(q.gen+q.embW+q.embS)*h*P, cfd:0, cfdN:0, cfdShare:0, bal:0, balShare:0}; dTot+=q.demand; }
+  let imp=0, exp=0; for(const c of R.ics){ if(c.mw>0) imp+=c.mw*h*P; else exp+=-c.mw*h*P; }
+  let cfdTot=0;
+  for(const u of R.units){ const k=CFD[u.u]; if(!k||!(u.mw>0)||!Z[u.z]) continue; const mwh=u.mw*h/k.length;
+    for(const c of k){ if(c.ref==='IMRP'&&P<0&&c.neg0) continue; const t=(c.s-(c.ref==='IMRP'?P:c.b))*mwh; Z[u.z].cfd+=t; Z[u.z].cfdN++; cfdTot+=t; } }
+  let balTot=0; if(BAL) for(const u of BAL.units){ if(!Z[u.z]) continue; Z[u.z].bal+=u.tot; balTot+=u.tot; }
+  for(const z in Z){ const q=Z[z], sh=R.zones[z].demand/dTot; q.cfdShare=cfdTot*sh; q.balShare=balTot*sh; q.wholesale=q.sell-q.use; q.net=q.wholesale+q.cfd-q.cfdShare+q.bal-q.balShare; }
+  return {P, pt:pr.t, Z, imp, exp, cfdTot, balTot, use:Object.values(Z).reduce((a,q)=>a+q.use,0)};
+}
+let M=null; window.__gbpf={money:()=>money(),ZN:()=>ZN};  // for checking figures from the console
+function moneyRows(q){ const r=(a,v,sub)=>`<tr><td>${a}${sub?`<div class="hint">${sub}</div>`:''}</td><td class="num">${v>=0?'+':''}${gbp(v)}</td></tr>`;
+  return `<table class="mtab">${r('Paid for electricity used',-q.use)}${r('Received for electricity generated',q.sell)}
+    ${q.cfd?r('CfD difference payments',q.cfd,q.cfd<0?'generators paying back: price above strike':`to ${q.cfdN} contract unit${q.cfdN>1?'s':''}`):''}${r('Share of the CfD levy',-q.cfdShare,q.cfdShare<0?'refunded: CfD generators are paying back':'paid by its consumers')}
+    ${BAL?r('Balancing payments to units here',q.bal)+r('Share of balancing costs',-q.balShare):''}
+    <tr class="tot"><td>Net ${q.net>=0?'received':'paid out'}</td><td class="num">${q.net>=0?'+':''}${gbp(q.net)}</td></tr></table>`; }
+function moneyPanel(){
+  const mp=document.getElementById('moneypanel'); M=money();
+  if(!M){ mp.innerHTML=''; return; }
+  const top=Object.entries(M.Z).sort((a,b)=>b[1].net-a[1].net);
+  const line=([z,q])=>`<div class="br"><span>${ZN[z]}</span><span>${q.net>=0?'+':''}${gbp(q.net)}</span></div>`;
+  mp.innerHTML=`<h3>Money for the half-hour ${fmtT(new Date(R.spStart))}–${fmtT(new Date(R.spStart+1800000))}</h3>
+    <p class="hint" style="margin:2px 0 6px">Who pays whom, at ${pu(M.P)}${puLab()} (market index${M.pt!==R.spStart?', '+fmtT(new Date(M.pt)):''}). Electricity used: <b>${gbp(M.use)}</b>. CfD difference payments: <b>${gbp(M.cfdTot)}</b>${M.cfdTot<0?' (returned by generators)':''}. Balancing: <b>${BAL?gbp(M.balTot):'not yet published'}</b>. ${M.imp>=M.exp?`Net paid abroad for imports: <b>${gbp(M.imp-M.exp)}</b>`:`Net received from abroad for exports: <b>${gbp(M.exp-M.imp)}</b>`}.</p>
+    <div class="balrows">${top.map(line).join('')}</div>
+    <p class="hint" style="margin-top:6px">An accounting picture: regions that export are paid for what they sell. CfD amounts are estimates from current strike prices (LCCC, ${CFD._asof}) against the half-hour price; about 1.3 GW of small distribution-connected CfD capacity is not counted. Choose <b>Money in / out</b> on the map to see it.</p>`;
+}
+function draw(){ M=money(); colourZones(); drawLayers(); panel(); moneyPanel(); }
 function drawLayers(){
   gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML=''; gCable.innerHTML='';
   // plants
@@ -559,6 +605,7 @@ function drawLayers(){
       const x=s.x+r+3/K, y=s.y+4/K, w=txt.length*7/K, h=15/K;
       if(boxes.some(q=>x<q[0]+q[2]&&q[0]<x+w&&y-h<q[1]&&q[1]-q[3]<y)) continue; boxes.push([x,y,w,h]);
       const t=el('text',{x,y,class:'plabel'},gPlants); t.textContent=txt; } }
+  if(mode==='money'&&M){ drawMoney(); return; }
   // interconnectors
   const icOff={INTELEC:[0,9],INTFR:[0,-6]}; const byC={};
   for(const c of R.ics){ const o=icOff[c.key]||[0,0]; const land=[c.x1+o[0],c.y1+o[1]]; const far=clipToView(land,[c.x2+o[0],c.y2+o[1]]);
@@ -590,6 +637,33 @@ function drawLayers(){
     if(Math.abs(f.mw)>=400){ const off=14/K+width(f.mw)/2; const t=el('text',{x:cv.mx+cv.nx*off,y:cv.my+cv.ny*off+6/K,class:'flabel'},gFlow); t.textContent=(Math.abs(f.mw)/1000).toFixed(1)+' GW'; }
   }
   for(const z in NODE){ const c=el('circle',{cx:NODE[z][0],cy:NODE[z][1],r:7/K,fill:'var(--flow)',stroke:'var(--surface-1)','stroke-width':2/K,style:'cursor:pointer'},gFlow); c.addEventListener('click',()=>select(z,false,true)); c.addEventListener('mousemove',e=>showTip(e,zoneTip(z))); c.addEventListener('mouseleave',hideTip); }
+}
+function drawMoney(){ // £ runs against the power: from the region using it to the region (or country) selling it
+  const P=M.P, h=0.5, mw2gb=mw=>Math.abs(mw)*h*Math.abs(P), wd=gb=>width(gb/Math.max(Math.abs(P)*h,1));
+  const icOff={INTELEC:[0,9],INTFR:[0,-6]}, byC={};
+  for(const c of R.ics){ if(Math.abs(c.mw)<1)continue; const o=icOff[c.key]||[0,0]; const land=[c.x1+o[0],c.y1+o[1]]; const far=clipToView(land,[c.x2+o[0],c.y2+o[1]]);
+    const toAbroad=(c.mw>0)===(P>=0); const a=toAbroad?land:far, b=toAbroad?far:land, gb=mw2gb(c.mw), cv=curve(a,b,0.05), g=el('g',{},gIC);
+    el('path',{d:cv.d,class:'flow money','stroke-width':wd(gb),opacity:.75},g);
+    const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2/K,wd(gb)*0.45)},g); an.style.animationDuration=Math.max(0.5,6-Math.abs(c.mw)/250)*K+'s';
+    arrowHead(g,el('path',{d:cv.d,fill:'none'},g),gb/Math.max(Math.abs(P)*h,1),'money');
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':18/K},g);
+    hit.addEventListener('mousemove',e=>showTip(e,`<b>${c.name}</b> (${c.country})`+row(toAbroad?'Paid abroad for imports':'Paid to GB for exports',gbp(gb))+row('Power',fmt(Math.abs(c.mw)))+'<div class="hint">for the half-hour</div>'));
+    hit.addEventListener('mouseleave',hideTip);
+    (byC[c.country] ||= {gb:0,pts:[],land:[]}); byC[c.country].gb+=(toAbroad?-1:1)*gb; byC[c.country].pts.push(far); byC[c.country].land.push(land); }
+  for(const [name,o] of Object.entries(byC)){ const lx=o.pts.reduce((s,p)=>s+p[0],0)/o.pts.length, ly=o.pts.reduce((s,p)=>s+p[1],0)/o.pts.length, ax=o.land[0][0], ay=o.land[0][1];
+    const anchor=lx>ax?'start':'end'; const t=el('text',{x:Math.max(BASE.x+6,Math.min(BASE.x+BASE.w-6,lx+(lx>ax?8:-8)/K)),y:Math.min(BASE.y+BASE.h-10,ly+(ly>ay?22:-8)/K),class:'iclabel','text-anchor':ly>BASE.y+BASE.h-40?'middle':anchor},gIC);
+    t.textContent=o.gb<0?`${name}: paid ${gbp(-o.gb)}`:`${name}: pays ${gbp(o.gb)}`;
+    if(anchor==='start'){ const w=t.getComputedTextLength(), x0=+t.getAttribute('x'), xr=BASE.x+BASE.w-6; if(x0+w>xr){ t.setAttribute('x',xr-w); t.setAttribute('y',+t.getAttribute('y')-16/K); } } }
+  for(const f of R.flows){ if(Math.abs(f.mw)<20)continue; const powerFrom=f.mw>=0?f.a:f.b, powerTo=f.mw>=0?f.b:f.a;
+    const payer=P>=0?powerTo:powerFrom, payee=P>=0?powerFrom:powerTo, gb=mw2gb(f.mw), cv=curve(NODE[payer],NODE[payee],0.1), g=el('g',{},gFlow);
+    el('path',{d:cv.d,class:'flow money','stroke-width':width(f.mw)},g);
+    const an=el('path',{d:cv.d,class:'flowanim','stroke-width':Math.max(1.2/K,width(f.mw)*0.45)},g); an.style.animationDuration=Math.max(0.4,6-Math.abs(f.mw)/450)*K+'s';
+    arrowHead(g,el('path',{d:cv.d,fill:'none'},g),f.mw,'money');
+    const hit=el('path',{d:cv.d,class:'hit','stroke-width':20/K},g);
+    hit.addEventListener('mousemove',e=>showTip(e,`<b>${f.label}</b>`+row(`${ZN[payer]} pays ${ZN[payee]}`,gbp(gb))+row('for power flowing the other way',fmt(Math.abs(f.mw)))+'<div class="hint">wholesale, for the half-hour</div>'));
+    hit.addEventListener('mouseleave',hideTip);
+    if(Math.abs(f.mw)>=400){ const off=14/K+width(f.mw)/2; const t=el('text',{x:cv.mx+cv.nx*off,y:cv.my+cv.ny*off+6/K,class:'mlabel'},gFlow); t.textContent=gbp(gb); } }
+  for(const z in NODE){ const c=el('circle',{cx:NODE[z][0],cy:NODE[z][1],r:7/K,fill:'var(--money)',stroke:'var(--surface-1)','stroke-width':2/K,style:'cursor:pointer'},gFlow); c.addEventListener('click',()=>select(z,false,true)); c.addEventListener('mousemove',e=>showTip(e,zoneTip(z))); c.addEventListener('mouseleave',hideTip); }
 }
 function stack(container,keys,parts){ // parts: {key: mw}
   const tot=Object.values(parts).reduce((a,b)=>a+b,0)||1; const s=document.getElementById(container+'stack'), k=document.getElementById(container+'keys');
@@ -632,6 +706,7 @@ function zonePanel(z){
       <div class="tile"><div class="k">Demand (est.)</div><div class="v">${fmt(q.demand)}</div><div class="n">${q.net>=0?'exporting':'importing'} ${fmt(Math.abs(q.net))}</div></div></div>
     <p class="ci">Carbon intensity of its supply: <b>${Math.round(zoneCI(z))} g CO₂/kWh</b> (GB ${Math.round(natCI())})</p>
     ${zoneBal(z)}
+    ${M?`<h3>Money for the half-hour</h3>${moneyRows(M.Z[z])}`:''}
     <h3>Where its electricity comes from (traced)</h3><div class="bars">${bars}</div>
     <h3>…and by source</h3><div class="stack" id="zstack"></div><div class="keys" id="zkeys"></div>`;
   stack('z',FUELS,fuels);
@@ -642,7 +717,8 @@ new MutationObserver(recolour).observe(document.documentElement,{attributes:true
 document.getElementById('prev').onclick=()=>{ if(offset<96&&liveStart){ offset++; step(); } };
 document.getElementById('next').onclick=()=>{ if(offset>0){ offset--; step(); } };
 document.getElementById('live').onclick=()=>{ offset=0; clearTimeout(stepTimer); run(); };
-document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=e=>{ mode=e.target.value; if(R) colourZones(); });
+document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=e=>{ const was=mode; mode=e.target.value; if(!R) return; colourZones(); if(was==='money'||mode==='money'){ hideTip(); drawLayers(); } updateLegendMoney(); });
+function updateLegendMoney(){ document.querySelectorAll('.lg-power').forEach(n=>n.style.display=mode==='money'?'none':''); document.querySelectorAll('.lg-money').forEach(n=>n.style.display=mode==='money'?'':'none'); }
 document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='ArrowLeft')document.getElementById('prev').click(); if(e.key==='ArrowRight'&&offset>0)document.getElementById('next').click(); });
 document.getElementById('fkeys').innerHTML=FUELS.filter(f=>f[0]!=='Imports').map(([k])=>`<span><i class="sw" style="background:${FCOL[k]}"></i>${k==='Other'?'Other (hydro, storage, oil)':k}</span>`).join('');
 document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
@@ -652,7 +728,7 @@ document.getElementById('tBal').onchange=e=>svg.classList.toggle('hide-bal',!e.t
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.closest('.plant,.balmark')) hideTip(); });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
-select(fromHash||'_C',!fromHash);
+select(fromHash||'_C',!fromHash); updateLegendMoney();
 run(); setInterval(()=>{ if(offset===0) run(); },5*60000);
 })();
 </script>
