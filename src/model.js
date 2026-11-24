@@ -62,7 +62,7 @@
       const p = plants[u], z = p ? p[3] : geo.gsp[u];
       if (!z) { if (v > 0) unlocated += v; continue; }
       if (!p && v < 0) { supDem[z] = (supDem[z]||0) - v; continue; }   // supplier demand BMUs: regional demand shape
-      units.push({ u, v, z, x: p && p[1], y: p && p[2], fuel: fuelGroup(p ? p[4] : '', p ? p[5] : ''), name: p ? p[5] : u });
+      units.push({ u, v, z, x: p && p[1], y: p && p[2], lx: p && p[6], ly: p && p[7], land: p && p[8], fuel: fuelGroup(p ? p[4] : '', p ? p[5] : ''), name: p ? p[5] : u });
       if (v > 0) posSum += v;
     }
     // National totals from FUELINST (metered, 5-min)

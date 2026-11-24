@@ -76,11 +76,16 @@ def fuel_of(u, name):
         if re.search(pat, n): return k
     return ''
 plants = []
-ZO = {'HOWAO':'_M','LARYW':'_J','GYMR':'_D','TKNEW':'_B','TKNWW':'_B','RCBKO':'_A','DDGNO':'_A','LNCSW':'_A','HMGTO':'_M','WTMSO':'_M','SHRSW':'_A','THNTO':'_J','RREW':'_G'}
+# offshore wind: drawn at the array, credited to the region of its onshore grid connection
+OFF = {k: v for k, v in json.load(open(ROOT/'data'/'offshore.json')).items() if not k.startswith('_')}
 for u, (lat, lon, name) in pts.items():
+    off = next((v for k, v in sorted(OFF.items(), key=lambda kv: -len(kv[0])) if u[2:].startswith(k)), None)
+    if off:
+        x, y = ll(off[1], off[2]); lx, ly = ll(off[4], off[5])
+        plants.append([u, round(x, 1), round(BX[3]-y, 1), zone_of(lx, ly), fuel_of(u, name) or 'WIND', off[0], round(lx, 1), round(BX[3]-ly, 1), off[3]])
+        continue
     x, y = ll(lat, lon)
-    zz = next((z for k, z in ZO.items() if u[2:].startswith(k)), None) or zone_of(x, y)
-    plants.append([u, round(x, 1), round(BX[3]-y, 1), zz, fuel_of(u, name), name])
+    plants.append([u, round(x, 1), round(BX[3]-y, 1), zone_of(x, y), fuel_of(u, name), name])
 gsp = {u: x['gspGroupId'] for u, x in ref.items() if x.get('gspGroupId') and u not in pts and not u.startswith('I_')}
 # zone label points
 zinfo = {}

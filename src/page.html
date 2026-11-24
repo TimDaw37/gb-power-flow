@@ -74,7 +74,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .iclabel{font-size:calc(18px / var(--k,1));font-weight:500;fill:var(--text-secondary);paint-order:stroke;stroke:var(--sea);stroke-width:calc(4px / var(--k,1));stroke-linejoin:round;pointer-events:none}
 .hit{fill:none;stroke:transparent;cursor:default}
 .plant{stroke:var(--plant-edge);stroke-width:calc(.8px / var(--k,1));opacity:.9}
-.hide-plants .plant{display:none}
+.hide-plants .plant,.hide-plants .cable{display:none}
+.cable{stroke:var(--text-muted);fill:none;stroke-linecap:round;pointer-events:none;opacity:.8}
 .hide-labels .flabel{display:none}
 .hide-plants .plabel{display:none}
 .hide-bal .balmark{display:none}
@@ -176,6 +177,7 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow)" stroke-width="4" stroke-linecap="round"/></svg>inter-regional flow (width ∝ MW)</div>
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
+      <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="4 3"/></svg>offshore wind cable to where it comes ashore (and is counted)</div>
       <div class="fkeys" id="fkeys"></div>
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,-9 L8.1,-1.8 L2.4,-1.8 L2.4,9 L-2.4,9 L-2.4,-1.8 L-8.1,-1.8 Z" fill="var(--text-primary)"/></svg>paid to make more</div>
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,9 L8.1,1.8 L2.4,1.8 L2.4,-9 L-2.4,-9 L-2.4,1.8 L-8.1,1.8 Z" fill="var(--text-primary)"/></svg>paid to make less</div>
@@ -283,7 +285,7 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gBal=el('g',{},svg), gLab=el('g',{},svg);
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gCable=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gBal=el('g',{},svg), gLab=el('g',{},svg);
 for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
 const zonePaths={};
 for(const [z,v] of Object.entries(GEO.zones)){
@@ -533,15 +535,17 @@ function colourZones(){
 }
 function draw(){ colourZones(); drawLayers(); panel(); }
 function drawLayers(){
-  gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML='';
+  gFlow.innerHTML=''; gIC.innerHTML=''; gPlants.innerHTML=''; gCable.innerHTML='';
   // plants
   const maxR=19;
   // one circle per site and fuel: units sharing a location (e.g. Whitelee 1 and 2) are summed, not drawn on top of each other
   const sites=new Map();
-  for(const u of R.units){ if(u.x==null)continue; const k=u.x+','+u.y+','+fuelKey(u.fuel); const st=sites.get(k)||{x:u.x,y:u.y,fuel:u.fuel,z:u.z,name:u.name,mw:0,units:[]}; st.mw+=u.mw; st.units.push(u); sites.set(k,st); }
+  for(const u of R.units){ if(u.x==null)continue; const k=u.x+','+u.y+','+fuelKey(u.fuel); const st=sites.get(k)||{x:u.x,y:u.y,lx:u.lx,ly:u.ly,land:u.land,fuel:u.fuel,z:u.z,name:u.name,mw:0,units:[]}; st.mw+=u.mw; st.units.push(u); sites.set(k,st); }
   for(const st of sites.values()){ if(st.mw<=5)continue; const r=Math.max(1.6,Math.sqrt(st.mw)/Math.sqrt(2000)*maxR)/Math.sqrt(K);
+    // offshore: dashed export cable from the array to where it comes ashore (and is counted)
+    if(st.lx!=null) el('line',{x1:st.x,y1:st.y,x2:st.lx,y2:st.ly,class:'cable','stroke-width':1.3/K,'stroke-dasharray':`${4/K} ${3/K}`},gCable);
     const c=el('circle',{cx:st.x,cy:st.y,r,class:'plant',fill:FCOL[fuelKey(st.fuel)]},gPlants);
-    const nm=[...new Set(st.units.map(u=>u.name))].join(' + '), tipHtml=()=>`<b>${nm}</b>`+row(fuelName(st.fuel),fmt(st.mw))+(st.units.length>1?st.units.map(u=>row('Unit '+u.u,fmt(u.mw))).join(''):row('Unit',st.units[0].u))+row('Region',ZN[st.z]);
+    const nm=[...new Set(st.units.map(u=>u.name))].join(' + '), tipHtml=()=>`<b>${nm}</b>`+row(fuelName(st.fuel),fmt(st.mw))+(st.units.length>1?st.units.map(u=>row('Unit '+u.u,fmt(u.mw))).join(''):row('Unit',st.units[0].u))+(st.land?row('Comes ashore',st.land)+row('Counted in',ZN[st.z]):row('Region',ZN[st.z]));
     c.addEventListener('mousemove',e=>showTip(e,tipHtml())); c.addEventListener('click',e=>showTip(e,tipHtml())); c.addEventListener('mouseleave',hideTip); }
   // biggest first so small circles stay on top
   [...gPlants.children].sort((a,b)=>b.getAttribute('r')-a.getAttribute('r')).forEach(c=>gPlants.appendChild(c));
