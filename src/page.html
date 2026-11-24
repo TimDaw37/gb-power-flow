@@ -21,9 +21,9 @@
   --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7c7b76;
   --border:#dddbd5; --sea:#e9eef3; --land-abroad:#e2e0da; --zone-stroke:#ffffff;
   --div-neg:#2a78d6; --div-mid:#f0efec; --div-pos:#e34948;
-  --flow:#2b2a28; --flow-ic:#9a6ee0; --plant-edge:rgba(0,0,0,.45);
-  /* fuel palette: 7 categories, checked pairwise (OKLab ΔE ≥ ~14 normal vision); nuclear = yellow by convention */
-  --f-wind:#2a78d6; --f-gas:#e05a1f; --f-nuclear:#e8bf00; --f-solar:#0fb5c0;
+  --flow:#2b2a28; --flow-ic:#9a6ee0; --plant-edge:rgba(0,0,0,.45); --carbon:#5b3a1f;
+  /* fuel palette: 7 categories, checked pairwise (OKLab ΔE ≥ ~14 normal vision); nuclear yellow, gas teal (flame), solar orange */
+  --f-wind:#2a78d6; --f-gas:#0fb5c0; --f-nuclear:#e8bf00; --f-solar:#e05a1f;
   --f-biomass:#178a3c; --f-imports:#9a6ee0; --f-other:#6f6e69;
 }
 @media (prefers-color-scheme: dark){
@@ -33,8 +33,8 @@
     --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
     --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
     --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-    --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55);
-    --f-wind:#3987e5; --f-gas:#e2682f; --f-nuclear:#f2d230; --f-solar:#2cc6d0;
+    --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c;
+    --f-wind:#3987e5; --f-gas:#2cc6d0; --f-nuclear:#f2d230; --f-solar:#e2682f;
     --f-biomass:#22a34a; --f-imports:#a99cf2; --f-other:#8d8c84;
   }
 }
@@ -44,8 +44,8 @@
   --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
   --border:#34342f; --sea:#141a20; --land-abroad:#2a2a27; --zone-stroke:#1a1a19;
   --div-neg:#3987e5; --div-mid:#383835; --div-pos:#e66767;
-  --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55);
-  --f-wind:#3987e5; --f-gas:#e2682f; --f-nuclear:#f2d230; --f-solar:#2cc6d0;
+  --flow:#f0efec; --flow-ic:#a99cf2; --plant-edge:rgba(0,0,0,.55); --carbon:#d2b08c;
+  --f-wind:#3987e5; --f-gas:#2cc6d0; --f-nuclear:#f2d230; --f-solar:#e2682f;
   --f-biomass:#22a34a; --f-imports:#a99cf2; --f-other:#8d8c84;
 }
 *{box-sizing:border-box}
@@ -343,10 +343,11 @@ async function loadPrices(){
   if(PRICES && Date.now()-pricesAt<4*60000) return PRICES;
   const now=Date.now(), from=new Date(now-50*3600000);
   const days=[...new Set([0,1,2].map(i=>new Date(now-i*86400000).toLocaleDateString('sv-SE',{timeZone:'Europe/London'})))];
-  const [mid,...sys]=await Promise.all([j(`${ELX}/balancing/pricing/market-index?from=${from.toISOString()}&to=${new Date(now+3600000).toISOString()}&dataProviders=APXMIDP`),...days.map(d=>j(`${ELX}/balancing/settlement/system-prices/${d}`).catch(()=>({data:[]})))]);
+  const [mid,...sys]=await Promise.all([j(`${ELX}/balancing/pricing/market-index?from=${from.toISOString()}&to=${new Date(now+3600000).toISOString()}&dataProviders=APXMIDP`).catch(()=>({data:[]})),...days.map(d=>j(`${ELX}/balancing/settlement/system-prices/${d}`).catch(()=>({data:[]})))]);
   const by=new Map();
   for(const s of sys) for(const r of s.data){ const t=Date.parse(r.startTime); by.set(t,{t,sd:r.settlementDate,sp:r.settlementPeriod,sys:r.systemSellPrice}); }
   for(const r of mid.data){ const t=Date.parse(r.startTime); const o=by.get(t)||{t,sd:r.settlementDate,sp:r.settlementPeriod}; o.mid=r.price; o.midVol=r.volume; by.set(t,o); }
+  if(!by.size) throw new Error('no price data');
   PRICES=[...by.values()].filter(o=>o.t>=now-49*3600000&&o.t<=now).sort((a,b)=>a.t-b.t); pricesAt=Date.now(); return PRICES;
 }
 async function loadBalancing(t,sd,sp){
@@ -501,11 +502,11 @@ function colourZones(){
   const lgT=document.getElementById('lgTitle'), lgR=document.getElementById('lgRamp'), lgE=document.getElementById('lgEnds');
   for(const [z,p] of Object.entries(zonePaths)){ const q=R.zones[z];
     if(mode==='balance') p.style.fill=divColor(q.net/Math.max(q.demand,300));
-    else if(mode==='carbon') p.style.fill=seq(zoneCI(z)/300,'var(--f-gas)');
+    else if(mode==='carbon') p.style.fill=seq(zoneCI(z)/300,'var(--carbon)');
     else p.style.fill=z===selected?'var(--div-neg)':seq(Math.sqrt((R.mix[selected]||{})[z]||0)/Math.sqrt(0.5),'var(--div-neg)');
   }
   if(mode==='balance'){ lgT.innerHTML='<b style="color:var(--text-primary)">Region balance</b> (net ÷ demand)'; lgR.style.background='linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))'; lgE.innerHTML='<span>importing</span><span>balanced</span><span>exporting</span>'; }
-  else if(mode==='carbon'){ lgT.innerHTML='<b style="color:var(--text-primary)">Carbon intensity</b> of each region’s supply'; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--f-gas))'; lgE.innerHTML='<span>0</span><span>150</span><span>300+ g/kWh</span>'; }
+  else if(mode==='carbon'){ lgT.innerHTML='<b style="color:var(--text-primary)">Carbon intensity</b> of each region’s supply'; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--carbon))'; lgE.innerHTML='<span>0</span><span>150</span><span>300+ g/kWh</span>'; }
   else { lgT.innerHTML=`<b style="color:var(--text-primary)">Share of ${ZN[selected]}’s supply</b> by region of origin`; lgR.style.background='linear-gradient(90deg,var(--div-mid),var(--div-neg))'; lgE.innerHTML='<span>0%</span><span>12%</span><span>50%+</span>'; }
 }
 function draw(){ colourZones(); drawLayers(); panel(); }
