@@ -306,13 +306,18 @@ function zoneTip(z){ if(!R)return `<b>${ZN[z]}</b>`; const q=R.zones[z];
   return `<b>${ZN[z]}</b>`+row('Generation',fmt(q.gen+q.embW+q.embS))+row('Imports landing here',fmt(q.ic))+row('Demand (est.)',fmt(q.demand))+(q.charge>1?row('Storage charging / exports',fmt(q.charge)):'')+row('Net to grid',fmtS(q.net))+row('Carbon intensity',Math.round(zoneCI(z))+' g/kWh'); }
 
 // ---------- data
-async function j(url){ const r=await fetch(url); if(!r.ok) throw new Error(r.status+' '+url.split('?')[0]); return r.json(); }
+async function j(url,ms=25000){ const r=await fetch(url,{signal:AbortSignal.timeout?AbortSignal.timeout(ms):undefined}); if(!r.ok) throw new Error(r.status+' '+url.split('?')[0]); return r.json(); }
 const EMB_RES=['db6c038f-98af-4570-ab60-24d71ebd0ae5','31861619-0b86-47ba-bac2-d008a760af54'];
 let offset=0, liveStart=null; const cache=new Map();
-async function embFor(sd,sp){
+let lastEmb=null;
+async function embFor(sd,sp,live){
+  const pick=m=>({wind:m.EMBEDDED_WIND_FORECAST,solar:m.EMBEDDED_SOLAR_FORECAST});
+  if(live){ try{ const q=await j(`https://api.neso.energy/api/3/action/datastore_search?resource_id=${EMB_RES[0]}&limit=8`,8000);
+      const m=q.result.records.find(r=>r.SETTLEMENT_DATE.slice(0,10)===sd&&r.SETTLEMENT_PERIOD===sp)||q.result.records[0]; if(m) return (lastEmb=pick(m)); }catch(e){}
+    return lastEmb?{...lastEmb,stale:true}:{wind:0,solar:0,missing:true}; }
   const f=encodeURIComponent(JSON.stringify({SETTLEMENT_DATE:sd+'T00:00:00',SETTLEMENT_PERIOD:sp}));
-  for(const id of EMB_RES){ try{ const q=await j(`https://api.neso.energy/api/3/action/datastore_search?resource_id=${id}&filters=${f}&sort=_id%20desc&limit=1`);
-    const m=q.result.records[0]; if(m) return {wind:m.EMBEDDED_WIND_FORECAST,solar:m.EMBEDDED_SOLAR_FORECAST}; }catch(e){} }
+  for(const id of EMB_RES){ try{ const q=await j(`https://api.neso.energy/api/3/action/datastore_search?resource_id=${id}&filters=${f}&sort=_id%20desc&limit=1`,8000);
+    const m=q.result.records[0]; if(m) return pick(m); }catch(e){} }
   return {wind:0,solar:0,missing:true};
 }
 async function fetchPeriod(target){ // target: settlement-period start (ms) or null for live
@@ -328,13 +333,17 @@ async function fetchPeriod(target){ // target: settlement-period start (ms) or n
   const [pn,boa,emb]=await Promise.all([
     j(`${ELX}/balancing/physical/all?dataset=PN&settlementDate=${sd}&settlementPeriod=${sp}`),
     j(`${ELX}/balancing/acceptances/all?settlementDate=${sd}&settlementPeriod=${sp}`),
-    embFor(sd,sp)]);
+    embFor(sd,sp,target==null)]);
   const r=GBFlow.compute(GEO,{fuelinst:fi,pn:pn.data,boa:boa.data,emb,t});
   Object.assign(r,{time:new Date(target==null?Date.parse(last.startTime):spStart),sp,sd,spStart,embMissing:!!emb.missing,live:target==null});
-  try{ const local=new Date(spStart).toLocaleString('sv-SE',{timeZone:'Europe/London'}).replace(' ','T');
-    const q=await j(NESO_DA+encodeURIComponent(`SELECT * from "38a18ec1-9e40-465d-93fb-301e80fd1352" WHERE "Date_ Time GMT_BST" = '${local}' AND "Constraint Group" = 'SCOTEX'`));
-    const rec=q.result.records[0]; r.daRef=rec?{flow:rec.Flow_MW,limit:rec.Limit_MW}:null; }catch(e){ r.daRef=null; }
+  r.daRef=null;
   return r;
+}
+async function loadDaRef(r){ // NESO day-ahead B6 forecast, for comparison only
+  if(r.daRef!==null) return;
+  try{ const local=new Date(r.spStart).toLocaleString('sv-SE',{timeZone:'Europe/London'}).replace(' ','T');
+    const q=await j(NESO_DA+encodeURIComponent(`SELECT * from "38a18ec1-9e40-465d-93fb-301e80fd1352" WHERE "Date_ Time GMT_BST" = '${local}' AND "Constraint Group" = 'SCOTEX'`),15000);
+    const rec=q.result.records[0]; r.daRef=rec?{flow:rec.Flow_MW,limit:rec.Limit_MW}:false; }catch(e){ r.daRef=false; }
 }
 // ---------- prices & balancing payments (Elexon)
 const PL=Object.fromEntries(GEO.plants.map(x=>[x[0],x]));
@@ -463,7 +472,8 @@ async function load(){
   else r=await getPeriod(liveStart-offset*1800000);
   if(my!==loadSeq) return;            // a newer request has superseded this one
   R=r; daRef=r.daRef; BAL=(BAL&&r.live&&BAL.t>=r.spStart-5*1800000)||(BAL&&BAL.t===r.spStart)?BAL:null; draw(); drawBal(); pricePanel(); loadExtras(my);
-  stamp.innerHTML=r.live?`<b>Live</b> · ${fmtT(r.time)} UK time<span class="long"> · updates every 5 min</span>`:`${fmtT(r.time,true)} UK time · period ${r.sp}`+(r.embMissing?' · <span class="err">no embedded estimate</span>':'');
+  loadDaRef(r).then(()=>{ if(my===loadSeq&&R===r){ daRef=r.daRef||null; panel(); } });
+  stamp.innerHTML=r.live?`<b>Live</b> · ${fmtT(r.time)} UK time<span class="long"> · updates every 5 min</span>`+(r.embMissing?' · <span class="err">no embedded estimate</span>':''):`${fmtT(r.time,true)} UK time · period ${r.sp}`+(r.embMissing?' · <span class="err">no embedded estimate</span>':'');
   document.getElementById('next').disabled=offset===0; document.getElementById('live').classList.toggle('on',offset===0);
 }
 function step(){ clearTimeout(stepTimer); const s=document.getElementById('stamp'); if(liveStart) s.textContent=offset===0?'Loading…':`Loading ${fmtT(new Date(liveStart-offset*1800000),true)}…`; document.getElementById('next').disabled=offset===0; stepTimer=setTimeout(run,250); }
