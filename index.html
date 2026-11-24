@@ -77,8 +77,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .hide-plants .plant{display:none}
 .hide-labels .flabel{display:none}
 .hide-plants .plabel{display:none}
-.hide-bal .balring{display:none}
-.balring{fill:none;stroke:var(--text-primary);cursor:default}
+.hide-bal .balmark{display:none}
+.balmark{fill:var(--text-primary);stroke:var(--surface-1);paint-order:stroke;stroke-linejoin:round;font-weight:800;text-anchor:middle;dominant-baseline:central;cursor:default;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.balmark tspan{font-weight:700}
 .pchart{position:relative;margin:6px 0 2px}
 .pchart svg{display:block;width:100%;height:130px;cursor:pointer}
 .pchart .ax{font-size:10.5px;fill:var(--text-muted)}
@@ -173,8 +174,8 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="fkeys" id="fkeys"></div>
-      <div class="row"><svg width="34" height="16"><circle cx="17" cy="8" r="6.5" fill="none" stroke="var(--text-primary)" stroke-width="1.6"/></svg>paid to increase output</div>
-      <div class="row"><svg width="34" height="16"><circle cx="17" cy="8" r="6.5" fill="none" stroke="var(--text-primary)" stroke-width="1.6" stroke-dasharray="3 2.4"/></svg>told to reduce output (ring area ∝ £)</div>
+      <div class="row"><b style="width:34px;text-align:center;color:var(--text-primary);font-size:15px">£↑</b>paid to increase output</div>
+      <div class="row"><b style="width:34px;text-align:center;color:var(--text-primary);font-size:15px">£↓</b>told to reduce output · size ∝ £</div>
     </div>
     <div id="tip"></div>
   </div>
@@ -504,9 +505,11 @@ async function loadExtras(my){
 function balSummary(units){ let up=0,downPaid=0,downBack=0; for(const u of units){ if(u.offer>0) up+=u.offer; if(u.bid>0) downPaid+=u.bid; else downBack-=u.bid; } return {up,downPaid,downBack,net:up+downPaid-downBack}; }
 function drawBal(){
   gBal.innerHTML=''; if(!BAL) return;
-  for(const u of BAL.units){ if(u.x==null||Math.abs(u.tot)<1000) continue;
-    const upDir=Math.abs(u.offer)>=Math.abs(u.bid), r=(5+Math.sqrt(Math.abs(u.tot))/9)/Math.sqrt(K);
-    const c=el('circle',{cx:u.x,cy:u.y,r,class:'balring','stroke-width':1.8/K,...(upDir?{}:{'stroke-dasharray':`${4/K} ${3/K}`})},gBal);
+  // biggest last so the largest payments sit on top
+  for(const u of BAL.units.filter(u=>u.x!=null&&Math.abs(u.tot)>=1000).sort((a,b)=>Math.abs(a.tot)-Math.abs(b.tot))){
+    const upDir=Math.abs(u.offer)>=Math.abs(u.bid), fs=(11+Math.sqrt(Math.abs(u.tot))/7)/Math.sqrt(K);
+    const c=el('text',{x:u.x,y:u.y,class:'balmark','font-size':fs,'stroke-width':fs*0.14},gBal);
+    c.textContent='£'; const ar=el('tspan',{'font-size':fs*0.6,dy:fs*0.12},c); ar.textContent=upDir?'↑':'↓';
     c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b>`+row('Region',ZN[u.z]||'')+(u.offer?row('Paid to increase output',gbp(u.offer)):'')+(u.bid>0?row('Paid to reduce output',gbp(u.bid)):u.bid<0?row('Paid back for reducing output',gbp(-u.bid)):'')+row('Half-hour from',fmtT(new Date(BAL.t)))));
     c.addEventListener('mouseleave',hideTip); }
 }

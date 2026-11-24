@@ -12,7 +12,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 - Regions can be coloured by export/import balance, by the carbon intensity of their supply, or by their share of the selected region's supply.
 - Zoom and pan: mouse wheel, double-click, drag, pinch on touch screens, the + / − / ⤢ buttons, or the + − 0 keys. Lines, dots and text keep their on-screen size, and stations are named once zoomed in.
 - Prices: wholesale market index and imbalance (cash-out) price for the half-hour, with a 48-hour chart (click it to jump to that time).
-- Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as rings on the map, a national summary, the largest payments and a per-region line.
+- Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as £↑ / £↓ signs on the map, sized by amount, a national summary, the largest payments and a per-region line.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.
