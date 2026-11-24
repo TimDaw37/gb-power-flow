@@ -11,6 +11,8 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 - Animated flows between the 14 DNO areas, and across each interconnector.
 - Regions can be coloured by export/import balance, by the carbon intensity of their supply, or by their share of the selected region's supply.
 - Zoom and pan: mouse wheel, double-click, drag, pinch on touch screens, the + / − / ⤢ buttons, or the + − 0 keys. Lines, dots and text keep their on-screen size, and stations are named once zoomed in.
+- Prices: wholesale market index and imbalance (cash-out) price for the half-hour, with a 48-hour chart (click it to jump to that time).
+- Balancing payments: what each unit was paid (or paid back) by the system operator to increase or reduce output, as rings on the map, a national summary, the largest payments and a per-region line.
 - Click a region to see its traced supply by region and by fuel, with its carbon intensity.
 - ◀ ▶ (or the arrow keys) step back through the last 48 hours, one half-hour settlement period at a time. **Live** returns to now.
 - Deep links to a region, e.g. `#london` or `#north-scotland`.
@@ -27,6 +29,8 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 | Inter-regional flow | — | DC power flow on a reduced network of 14 nodes and 23 paths. Each path is weighted by a rough transfer capability. |
 | Origin of supply | — | Proportional-sharing flow tracing (Bialek). This is an accounting convention: power does not travel from a specific source to a specific consumer. |
 | Carbon intensity | Approximate emission factors (after NESO's Carbon Intensity API methodology); a separate factor for each interconnector's country | Applied to the traced fuel mix. |
+| Prices | Elexon market index data (APX) and system prices | National figures; no regional price exists in GB. |
+| Balancing payments | Elexon indicative bid and offer cashflows per BM unit | Summed per unit; offers = paid to increase output, positive bids = paid to reduce (typically wind), negative bids = paid back (fuel not burnt). Latest published half-hour in live view. |
 | Check | NESO day-ahead constraint flows (SCOTEX / B6) | Shown beside the model's Scotland→England flow. |
 
 ### Limitations

@@ -77,6 +77,18 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .hide-plants .plant{display:none}
 .hide-labels .flabel{display:none}
 .hide-plants .plabel{display:none}
+.hide-bal .balring{display:none}
+.balring{fill:none;stroke:var(--text-primary);cursor:default}
+.pchart{position:relative;margin:6px 0 2px}
+.pchart svg{display:block;width:100%;height:130px;cursor:pointer}
+.pchart .ax{font-size:10.5px;fill:var(--text-muted)}
+.pchart .grid{stroke:var(--border);stroke-width:1}
+.pkeys{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin:2px 0 8px}
+.pkeys i{display:inline-block;width:16px;height:0;border-top:2px solid;vertical-align:middle;margin-right:5px}
+.balrows{font-size:12.5px;margin-top:4px}
+.balrows .br{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:3px 0;border-bottom:1px solid var(--border)}
+.balrows .br span:last-child{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.balrows .sub{color:var(--text-muted);font-size:11.5px}
 .plabel{font-size:calc(13px / var(--k,1));fill:var(--text-primary);paint-order:stroke;stroke:var(--surface-1);stroke-width:calc(3px / var(--k,1));stroke-linejoin:round;pointer-events:none}
 #map{touch-action:pan-y;cursor:default}#map.zoomed{cursor:grab}#map.dragging{cursor:grabbing}
 .zoomctl{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface-1)}
@@ -146,6 +158,7 @@ a{color:var(--div-neg)}
     <div class="toggles">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
+      <label><input type="checkbox" id="tBal" checked> Balancing payments</label>
       <div class="mode"><b>Colour regions by</b>
         <label><input type="radio" name="mode" value="balance" checked> Export / import</label>
         <label><input type="radio" name="mode" value="carbon"> Carbon intensity</label>
@@ -160,6 +173,8 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="var(--flow-ic)" stroke-width="4" stroke-linecap="round"/></svg>interconnector</div>
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="fkeys" id="fkeys"></div>
+      <div class="row"><svg width="34" height="16"><circle cx="17" cy="8" r="6.5" fill="none" stroke="var(--text-primary)" stroke-width="1.6"/></svg>paid to increase output</div>
+      <div class="row"><svg width="34" height="16"><circle cx="17" cy="8" r="6.5" fill="none" stroke="var(--text-primary)" stroke-width="1.6" stroke-dasharray="3 2.4"/></svg>told to reduce output (ring area ∝ £)</div>
     </div>
     <div id="tip"></div>
   </div>
@@ -168,6 +183,11 @@ a{color:var(--div-neg)}
     <h2 id="natHead">Britain's supply right now</h2>
     <div class="stack" id="natstack"></div>
     <div class="keys" id="natkeys"></div>
+    <h2>The price of electricity</h2>
+    <div class="tiles" id="ptiles" style="margin-bottom:4px"></div>
+    <div class="pchart" id="pchart" title="Click to jump to that half-hour"></div>
+    <div class="pkeys"><span><i style="border-color:var(--text-primary)"></i>Wholesale (market index)</span><span><i style="border-color:var(--f-imports);border-top-style:dashed"></i>Imbalance price</span></div>
+    <div id="balpanel"></div>
     <div id="zonepanel"><h2>Pick a region</h2><p class="hint">Click a region on the map to see an estimate of where its electricity is coming from.</p></div>
     <h2>Flows across the main boundaries</h2>
     <div id="flowtable"></div>
@@ -178,6 +198,8 @@ a{color:var(--div-neg)}
       <p><b>Demand by place.</b> National demand is everything generated plus net imports, less storage charging. It is shared between the 14 distribution areas using suppliers' own half-hourly demand notifications for each area, which gives a live regional shape.</p>
       <p><b>Flows.</b> Each region's surplus or deficit is passed across a reduced 23-path network with a DC power-flow approximation, using rough transfer capabilities as weights. That gives a <i>pattern</i> of flow, not the flow on any real circuit. The Western HVDC link is treated as an ordinary path, although in reality it is set by the operator.</p>
       <p><b>"Where does it come from?"</b> Power does not travel from one station to one customer. The breakdown uses <i>proportional sharing</i> (Bialek's flow tracing): at each region, incoming power is assumed to mix evenly before moving on. It is an accounting convention, not a measurement.</p>
+      <p><b>Prices.</b> Britain has one national wholesale price, not regional ones. The market index price is the volume-weighted price of short-term trading on the power exchange for each half-hour; the imbalance (cash-out) price is what suppliers and generators pay or receive for being out of balance. Most electricity is sold through private contracts whose prices are not published.</p>
+      <p><b>Balancing payments.</b> Every unit in the Balancing Mechanism publishes the prices at which it will increase output (offers) or reduce it (bids), and the system operator's instructions are public. Elexon's indicative cashflows give what each unit was paid, or paid back, for those instructions in each half-hour. Wind farms usually have negative bid prices (they lose subsidy when switched off), so they are paid to reduce output; fossil plant usually pays back part of its saved fuel cost. Cashflows are published about half an hour after the period, so live view shows the latest published half-hour.</p>
       <p><b>Check against NESO.</b> NESO publishes forecast day-ahead flows across major boundaries (before constraint actions). Scotland→England (B6/SCOTEX) is the most useful comparison: when the model shows less than that forecast, the gap is mostly curtailed Scottish wind.</p>
       <p>Data: <a href="https://bmrs.elexon.co.uk/" target="_blank" rel="noopener">Elexon Insights (BMRS)</a> – FUELINST, PN, BOALF; <a href="https://www.neso.energy/data-portal" target="_blank" rel="noopener">NESO data portal</a> – embedded wind &amp; solar forecast, DNO licence-area boundaries. Built by Tim Daw, 2026.</p>
     </details>
@@ -211,7 +233,7 @@ function applyView(){
   svg.setAttribute('viewBox',`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`);
   K=BASE.w/VIEW.w; svg.style.setProperty('--k',K); svg.classList.toggle('zoomed',K>1.01);
   svg.style.touchAction=K>1.01?'none':'pan-y';
-  cancelAnimationFrame(rafId); rafId=requestAnimationFrame(()=>{ if(R) drawLayers(); });
+  cancelAnimationFrame(rafId); rafId=requestAnimationFrame(()=>{ if(R){ drawLayers(); drawBal(); } });
 }
 function svgPt(cx,cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 function unitsPerPx(){ const r=svg.getBoundingClientRect(); return Math.max(VIEW.w/r.width,VIEW.h/r.height); }
@@ -256,7 +278,7 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gBal=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
 for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
 const zonePaths={};
 for(const [z,v] of Object.entries(GEO.zones)){
@@ -311,6 +333,98 @@ async function fetchPeriod(target){ // target: settlement-period start (ms) or n
     const rec=q.result.records[0]; r.daRef=rec?{flow:rec.Flow_MW,limit:rec.Limit_MW}:null; }catch(e){ r.daRef=null; }
   return r;
 }
+// ---------- prices & balancing payments (Elexon)
+const PL=Object.fromEntries(GEO.plants.map(x=>[x[0],x]));
+const gbp=v=>{ const a=Math.abs(v); return (v<0?'−':'')+'£'+(a>=1e6?(a/1e6).toFixed(2)+'m':a>=1e3?Math.round(a/1e3)+'k':Math.round(a)); };
+let PRICES=null, pricesAt=0, BAL=null; const balCache=new Map();
+async function loadPrices(){
+  if(PRICES && Date.now()-pricesAt<4*60000) return PRICES;
+  const now=Date.now(), from=new Date(now-50*3600000);
+  const days=[...new Set([0,1,2].map(i=>new Date(now-i*86400000).toLocaleDateString('sv-SE',{timeZone:'Europe/London'})))];
+  const [mid,...sys]=await Promise.all([j(`${ELX}/balancing/pricing/market-index?from=${from.toISOString()}&to=${new Date(now+3600000).toISOString()}&dataProviders=APXMIDP`),...days.map(d=>j(`${ELX}/balancing/settlement/system-prices/${d}`).catch(()=>({data:[]})))]);
+  const by=new Map();
+  for(const s of sys) for(const r of s.data){ const t=Date.parse(r.startTime); by.set(t,{t,sd:r.settlementDate,sp:r.settlementPeriod,sys:r.systemSellPrice}); }
+  for(const r of mid.data){ const t=Date.parse(r.startTime); const o=by.get(t)||{t,sd:r.settlementDate,sp:r.settlementPeriod}; o.mid=r.price; o.midVol=r.volume; by.set(t,o); }
+  PRICES=[...by.values()].filter(o=>o.t>=now-49*3600000&&o.t<=now).sort((a,b)=>a.t-b.t); pricesAt=Date.now(); return PRICES;
+}
+async function loadBalancing(t,sd,sp){
+  if(balCache.has(t)) return balCache.get(t);
+  const [b,o]=await Promise.all(['bid','offer'].map(s=>j(`${ELX}/balancing/settlement/indicative/cashflows/all/${s}/${sd}/${sp}`)));
+  if(!b.data.length&&!o.data.length) return null;
+  const units={};
+  for(const [side,res] of [['bid',b],['offer',o]]) for(const r of res.data){ if(!r.totalCashflow) continue; const u=(units[r.bmUnit] ||= {u:r.bmUnit,bid:0,offer:0}); u[side]+=r.totalCashflow; }
+  const list=Object.values(units).map(u=>{ const pl=PL[u.u]; return {...u,tot:u.bid+u.offer,z:pl?pl[3]:GEO.gsp[u.u],x:pl&&pl[1],y:pl&&pl[2],name:pl?pl[5]:u.u}; });
+  const res={t,sd,sp,units:list}; balCache.set(t,res); return res;
+}
+async function balFor(r){
+  for(let i=0;i<(r.live?5:1);i++){ const t=r.spStart-i*1800000; let sd=r.sd, sp=r.sp;
+    if(i){ const q=(PRICES||[]).find(o=>o.t===t); if(!q) continue; sd=q.sd; sp=q.sp; }
+    try{ const b=await loadBalancing(t,sd,sp); if(b) return b; }catch(e){} }
+  return null;
+}
+async function loadExtras(my){
+  try{ await loadPrices(); }catch(e){ console.warn('prices',e); }
+  let b=null; try{ b=await balFor(R); }catch(e){}
+  if(my!==loadSeq) return;
+  BAL=b; drawBal(); pricePanel(); if(selected) zonePanel(selected);
+}
+function balSummary(units){ let up=0,downPaid=0,downBack=0; for(const u of units){ if(u.offer>0) up+=u.offer; if(u.bid>0) downPaid+=u.bid; else downBack-=u.bid; } return {up,downPaid,downBack,net:up+downPaid-downBack}; }
+function drawBal(){
+  gBal.innerHTML=''; if(!BAL) return;
+  for(const u of BAL.units){ if(u.x==null||Math.abs(u.tot)<1000) continue;
+    const upDir=Math.abs(u.offer)>=Math.abs(u.bid), r=(5+Math.sqrt(Math.abs(u.tot))/9)/Math.sqrt(K);
+    const c=el('circle',{cx:u.x,cy:u.y,r,class:'balring','stroke-width':1.8/K,...(upDir?{}:{'stroke-dasharray':`${4/K} ${3/K}`})},gBal);
+    c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b>`+row('Region',ZN[u.z]||'')+(u.offer?row('Paid to increase output',gbp(u.offer)):'')+(u.bid>0?row('Paid to reduce output',gbp(u.bid)):u.bid<0?row('Paid back for reducing output',gbp(-u.bid)):'')+row('Half-hour from',fmtT(new Date(BAL.t)))));
+    c.addEventListener('mouseleave',hideTip); }
+}
+function pricePanel(){
+  const pt=document.getElementById('ptiles'), pc=document.getElementById('pchart'), bp=document.getElementById('balpanel');
+  if(!PRICES||!PRICES.length){ pt.innerHTML='<p class="hint">Price data unavailable.</p>'; pc.innerHTML=''; bp.innerHTML=''; return; }
+  const at=PRICES.filter(o=>o.t<=R.spStart), cur=at[at.length-1]||PRICES[0];
+  const midP=[...at].reverse().find(o=>o.mid!=null&&o.midVol>0)||[...at].reverse().find(o=>o.mid!=null), sysP=[...at].reverse().find(o=>o.sys!=null);
+  const lab=o=>o&&o.t!==R.spStart?` (${fmtT(new Date(o.t))})`:'';
+  pt.innerHTML=`<div class="tile"><div class="k">Wholesale price</div><div class="v">${midP?'£'+Math.round(midP.mid):'–'}<span style="font-size:13px;font-weight:500"> /MWh</span></div><div class="n">market index${lab(midP)} · ${midP?(midP.mid/10).toFixed(1)+'p/kWh':''}</div></div>`+
+    `<div class="tile"><div class="k">Imbalance price</div><div class="v">${sysP?'£'+Math.round(sysP.sys):'–'}<span style="font-size:13px;font-weight:500"> /MWh</span></div><div class="n">cash-out${lab(sysP)}</div></div>`;
+  // chart
+  const W=pc.clientWidth||340, H=130, m={l:34,r:6,t:8,b:18};
+  const vals=PRICES.flatMap(o=>[o.mid,o.sys]).filter(v=>v!=null), lo=Math.min(0,...vals), hi=Math.max(...vals,50);
+  const t0=PRICES[0].t, t1=PRICES[PRICES.length-1].t;
+  const X=t=>m.l+(W-m.l-m.r)*(t-t0)/Math.max(1,t1-t0), Y=v=>m.t+(H-m.t-m.b)*(1-(v-lo)/(hi-lo));
+  const line=(key)=>{ let d='',pen=false; for(const o of PRICES){ if(o[key]==null){pen=false;continue;} d+=(pen?'L':'M')+X(o.t).toFixed(1)+','+Y(o[key]).toFixed(1); pen=true; } return d; };
+  const tk=hi-lo>400?200:hi-lo>200?100:50, ticks=[]; for(let v=Math.ceil(lo/tk)*tk;v<=hi;v+=tk) ticks.push(v);
+  const days=[]; for(const o of PRICES){ const h=+new Date(o.t).toLocaleString('en-GB',{hour:'2-digit',hour12:false,timeZone:'Europe/London'}); if(h===0&&new Date(o.t).getUTCMinutes()===0||h===0&&!days.length) days.push(o.t); }
+  pc.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Wholesale and imbalance prices over the last two days">
+    ${ticks.map(v=>`<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax" x="${m.l-4}" y="${Y(v)+3.5}" text-anchor="end">£${v}</text>`).join('')}
+    ${[...new Set(days)].map(t=>`<line class="grid" x1="${X(t)}" x2="${X(t)}" y1="${m.t}" y2="${H-m.b}" stroke-dasharray="2 3"/><text class="ax" x="${X(t)+3}" y="${H-5}">${new Date(t).toLocaleDateString('en-GB',{weekday:'short',timeZone:'Europe/London'})}</text>`).join('')}
+    <path d="${line('sys')}" fill="none" stroke="var(--f-imports)" stroke-width="1.6" stroke-dasharray="4 3"/>
+    <path d="${line('mid')}" fill="none" stroke="var(--text-primary)" stroke-width="2"/>
+    <line x1="${X(R.spStart)}" x2="${X(R.spStart)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--text-primary)" stroke-width="1"/>
+    ${cur&&cur.mid!=null?`<circle cx="${X(cur.t)}" cy="${Y(cur.mid)}" r="4" fill="var(--text-primary)" stroke="var(--surface-1)" stroke-width="2"/>`:''}
+    <g id="pch"></g></svg>`;
+  const svgc=pc.querySelector('svg'), hov=pc.querySelector('#pch');
+  const near=e=>{ const r=svgc.getBoundingClientRect(), x=(e.clientX-r.left)*W/r.width; let best=PRICES[0]; for(const o of PRICES) if(Math.abs(X(o.t)-x)<Math.abs(X(best.t)-x)) best=o; return best; };
+  svgc.onmousemove=e=>{ const o=near(e); hov.innerHTML=`<line x1="${X(o.t)}" x2="${X(o.t)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--text-muted)" stroke-dasharray="2 2"/>`;
+    const r=document.getElementById('mapwrap'); tip.style.display='none';
+    const txt=`${fmtT(new Date(o.t),true)} · £${o.mid!=null?Math.round(o.mid):'–'} / £${o.sys!=null?Math.round(o.sys):'–'}`, tx=Math.min(Math.max(X(o.t),m.l+70),W-m.r-70);
+    hov.innerHTML+=`<text x="${tx}" y="${m.t+9}" text-anchor="middle" style="font-size:11px;fill:var(--text-primary);paint-order:stroke;stroke:var(--surface-1);stroke-width:3px">${txt}</text>`; };
+  svgc.onmouseleave=()=>{ hov.innerHTML=''; };
+  svgc.onclick=e=>{ const o=near(e); if(!liveStart) return; const k=Math.round((liveStart-o.t)/1800000); if(k>=0&&k<=96&&k!==offset){ offset=k; step(); } };
+  // balancing summary
+  if(!BAL){ bp.innerHTML=`<h3>Balancing payments</h3><p class="hint">${R.live?'Not yet published for the last two hours.':'Not published for this half-hour.'}</p>`; return; }
+  const s=balSummary(BAL.units);
+  const windDown=BAL.units.filter(u=>u.bid>0&&(PL[u.u]||[])[4]==='WIND').reduce((a,u)=>a+u.bid,0);
+  const windNote=s.downPaid>0&&windDown/s.downPaid>0.5?`<div class="sub">${Math.round(100*windDown/s.downPaid)}% to wind farms, which lose subsidy when switched off</div>`:'';
+  const top=BAL.units.slice().sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot)).slice(0,7);
+  const per=BAL.t!==R.spStart?` (latest published: ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))})`:` (${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))})`;
+  bp.innerHTML=`<h3>Balancing payments, one half-hour${per}</h3>
+    <div class="balrows">
+      <div class="br"><span>Paid to units to increase output</span><span>${gbp(s.up)}</span></div>
+      <div class="br"><span>Paid to units to reduce output${windNote}</span><span>${gbp(s.downPaid)}</span></div>
+      <div class="br"><span>Paid back by units reducing output<div class="sub">fuel they did not burn</div></span><span>${gbp(-s.downBack)}</span></div>
+      <div class="br"><span><b>Net cost of balancing actions</b></span><span><b>${gbp(s.net)}</b></span></div>
+    </div>
+    <h3>Largest payments</h3><div class="balrows">${top.map(u=>`<div class="br"><span>${u.name.replace(/ \(.*\)$/,'')}<div class="sub">${ZN[u.z]||'location unknown'} · ${Math.abs(u.offer)>=Math.abs(u.bid)?'increase output':'reduce output'}</div></span><span>${gbp(u.tot)}</span></div>`).join('')}</div>`;
+}
 const fmtT=(d,withDay)=>d.toLocaleString('en-GB',{...(withDay?{weekday:'short',day:'numeric',month:'short'}:{}),hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
 let loadSeq=0, stepTimer=null;
 function getPeriod(key){ // one request per half-hour, shared by every caller
@@ -324,7 +438,7 @@ async function load(){
   if(offset===0){ r=await fetchPeriod(null); liveStart=r.spStart; cache.set(r.spStart,Promise.resolve(r)); }
   else r=await getPeriod(liveStart-offset*1800000);
   if(my!==loadSeq) return;            // a newer request has superseded this one
-  R=r; daRef=r.daRef; draw();
+  R=r; daRef=r.daRef; BAL=(BAL&&r.live&&BAL.t>=r.spStart-5*1800000)||(BAL&&BAL.t===r.spStart)?BAL:null; draw(); drawBal(); pricePanel(); loadExtras(my);
   stamp.innerHTML=r.live?`<b>Live</b> · ${fmtT(r.time)} UK time<span class="long"> · updates every 5 min</span>`:`${fmtT(r.time,true)} UK time · period ${r.sp}`+(r.embMissing?' · <span class="err">no embedded estimate</span>':'');
   document.getElementById('next').disabled=offset===0; document.getElementById('live').classList.toggle('on',offset===0);
 }
@@ -451,6 +565,8 @@ function panel(){
 }
 const SLUG={_A:'eastern',_B:'east-midlands',_C:'london',_D:'merseyside-n-wales',_E:'west-midlands',_F:'north-east',_G:'north-west',_H:'southern',_J:'south-east',_K:'south-wales',_L:'south-west',_M:'yorkshire',_N:'south-scotland',_P:'north-scotland'};
 function select(z,noHash,user){ selected=z; if(user&&innerWidth<900) setTimeout(()=>document.getElementById('zonepanel').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}),50); for(const [k,p] of Object.entries(zonePaths)) p.classList.toggle('sel',k===z); if(!noHash){ try{ history.replaceState(null,'','#'+SLUG[z]); }catch(e){} } if(R){ zonePanel(z); colourZones(); } }
+function zoneBal(z){ if(!BAL) return ''; const us=BAL.units.filter(u=>u.z===z); if(!us.length) return `<p class="ci">No balancing payments here in ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))}.</p>`; const s=balSummary(us);
+  return `<p class="ci">Balancing, ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))}: paid <b>${gbp(s.up)}</b> to increase output here, <b>${gbp(s.downPaid)}</b> to reduce it${s.downBack?`, ${gbp(s.downBack)} paid back`:''}.</p>`; }
 function zonePanel(z){
   const q=R.zones[z], mix=R.mix[z], fm=R.fmix[z];
   const label=k=>k.startsWith('_')?(k===z?`${ZN[k]} (local)`:ZN[k]):`${IC_SHORT[k]} (${GEO.ics.find(c=>c.key===k).country})`;
@@ -465,6 +581,7 @@ function zonePanel(z){
       <div class="tile"><div class="k">Generation</div><div class="v">${fmt(q.gen+q.embW+q.embS)}</div><div class="n">${q.ic>0?`+ ${fmt(q.ic)} landing from abroad`:'within the region'}</div></div>
       <div class="tile"><div class="k">Demand (est.)</div><div class="v">${fmt(q.demand)}</div><div class="n">${q.net>=0?'exporting':'importing'} ${fmt(Math.abs(q.net))}</div></div></div>
     <p class="ci">Carbon intensity of its supply: <b>${Math.round(zoneCI(z))} g CO₂/kWh</b> (GB ${Math.round(natCI())})</p>
+    ${zoneBal(z)}
     <h3>Where its electricity comes from (traced)</h3><div class="bars">${bars}</div>
     <h3>…and by source</h3><div class="stack" id="zstack"></div><div class="keys" id="zkeys"></div>`;
   stack('z',FUELS,fuels);
@@ -479,6 +596,7 @@ document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=e=>{ mode=e.
 document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='ArrowLeft')document.getElementById('prev').click(); if(e.key==='ArrowRight'&&offset>0)document.getElementById('next').click(); });
 document.getElementById('fkeys').innerHTML=FUELS.filter(f=>f[0]!=='Imports').map(([k])=>`<span><i class="sw" style="background:${FCOL[k]}"></i>${k==='Other'?'Other (hydro, storage, oil)':k}</span>`).join('');
 document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
+document.getElementById('tBal').onchange=e=>svg.classList.toggle('hide-bal',!e.target.checked);
 document.getElementById('tLabels').onchange=e=>svg.classList.toggle('hide-labels',!e.target.checked);
 svg.addEventListener('click',e=>{ if(!e.target.classList.contains('zone')){} });
 const fromHash=Object.keys(SLUG).find(k=>SLUG[k]===location.hash.slice(1));
