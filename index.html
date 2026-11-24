@@ -175,7 +175,8 @@ a{color:var(--div-neg)}
       <div class="row"><svg width="34" height="12"><circle cx="17" cy="6" r="5" fill="var(--f-wind)"/></svg>power station, area ∝ output</div>
       <div class="fkeys" id="fkeys"></div>
       <div class="row"><b style="width:34px;text-align:center;color:var(--text-primary);font-size:15px">£↑</b>paid to increase output</div>
-      <div class="row"><b style="width:34px;text-align:center;color:var(--text-primary);font-size:15px">£↓</b>told to reduce output · size ∝ £</div>
+      <div class="row"><b style="width:34px;text-align:center;color:var(--text-primary);font-size:15px">£↓</b>told to reduce output</div>
+      <div class="row" style="padding-left:40px">size = total £ paid in one half-hour</div>
     </div>
     <div id="tip"></div>
   </div>
@@ -412,7 +413,7 @@ const fmtS=mw=>(mw>0?'+':mw<0?'−':'')+fmt(Math.abs(mw));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- static layers
-const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gBal=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gLab=el('g',{},svg);
+const gLand=el('g',{},svg), gZones=el('g',{},svg), gPlants=el('g',{},svg), gIC=el('g',{},svg), gFlow=el('g',{},svg), gBal=el('g',{},svg), gLab=el('g',{},svg);
 for(const l of GEO.land) el('path',{d:l.d,class:l.name==='United Kingdom'?'ukbase':'abroad'},gLand);
 const zonePaths={};
 for(const [z,v] of Object.entries(GEO.zones)){
@@ -483,10 +484,12 @@ async function loadPrices(){
 }
 async function loadBalancing(t,sd,sp){
   if(balCache.has(t)) return balCache.get(t);
-  const [b,o]=await Promise.all(['bid','offer'].map(s=>j(`${ELX}/balancing/settlement/indicative/cashflows/all/${s}/${sd}/${sp}`)));
+  const [b,o,vb,vo]=await Promise.all([...['bid','offer'].map(s=>j(`${ELX}/balancing/settlement/indicative/cashflows/all/${s}/${sd}/${sp}`)),
+    ...['bid','offer'].map(s=>j(`${ELX}/balancing/settlement/indicative/volumes/all/${s}/${sd}/${sp}`).catch(()=>({data:[]})))]);
   if(!b.data.length&&!o.data.length) return null;
-  const units={};
-  for(const [side,res] of [['bid',b],['offer',o]]) for(const r of res.data){ if(!r.totalCashflow) continue; const u=(units[r.bmUnit] ||= {u:r.bmUnit,bid:0,offer:0}); u[side]+=r.totalCashflow; }
+  const units={}, U=id=>(units[id] ||= {u:id,bid:0,offer:0,vbid:0,voffer:0});
+  for(const [side,res] of [['bid',b],['offer',o]]) for(const r of res.data){ if(!r.totalCashflow) continue; U(r.bmUnit)[side]+=r.totalCashflow; }
+  for(const [side,res] of [['vbid',vb],['voffer',vo]]) for(const r of res.data){ if(r.dataType!=='Tagged'||!r.totalVolumeAccepted||!units[r.bmUnit]) continue; /* one record per data type; Tagged carries the accepted volume for both bids and offers */ units[r.bmUnit][side]+=r.totalVolumeAccepted; }
   const list=Object.values(units).map(u=>{ const pl=PL[u.u]; return {...u,tot:u.bid+u.offer,z:pl?pl[3]:GEO.gsp[u.u],x:pl&&pl[1],y:pl&&pl[2],name:pl?pl[5]:u.u}; });
   const res={t,sd,sp,units:list}; balCache.set(t,res); return res;
 }
@@ -502,7 +505,17 @@ async function loadExtras(my){
   if(my!==loadSeq) return;
   BAL=b; drawBal(); pricePanel(); if(selected) zonePanel(selected);
 }
-function balSummary(units){ let up=0,downPaid=0,downBack=0; for(const u of units){ if(u.offer>0) up+=u.offer; if(u.bid>0) downPaid+=u.bid; else downBack-=u.bid; } return {up,downPaid,downBack,net:up+downPaid-downBack}; }
+function balSummary(units){ let up=0,downPaid=0,downBack=0,vUp=0,vDownPaid=0,vDownBack=0;
+  for(const u of units){ if(u.offer>0){ up+=u.offer; vUp+=u.voffer; } if(u.bid>0){ downPaid+=u.bid; vDownPaid-=u.vbid; } else if(u.bid<0){ downBack-=u.bid; vDownBack-=u.vbid; } }
+  return {up,downPaid,downBack,vUp,vDownPaid,vDownBack,net:up+downPaid-downBack}; }
+const mwh=v=>v>=10?Math.round(v).toLocaleString('en-GB')+' MWh':v.toFixed(1)+' MWh';
+const perMWh=(gb,v)=>v>0.5?` (about £${Math.round(gb/v)} per MWh)`:'';
+const balPeriod=()=>`${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))}`;
+function unitBalText(u){ const out=[];
+  if(u.offer) out.push(`Paid ${gbp(u.offer)} to make ${u.voffer?mwh(u.voffer)+' more':'more'}${perMWh(u.offer,u.voffer)}`);
+  if(u.bid>0) out.push(`Paid ${gbp(u.bid)} to make ${u.vbid?mwh(-u.vbid)+' less':'less'}${perMWh(u.bid,-u.vbid)}`);
+  if(u.bid<0) out.push(`Paid back ${gbp(-u.bid)} for making ${u.vbid?mwh(-u.vbid)+' less':'less'} (fuel it didn't burn)`);
+  return out; }
 function drawBal(){
   gBal.innerHTML=''; if(!BAL) return;
   // biggest last so the largest payments sit on top
@@ -510,7 +523,7 @@ function drawBal(){
     const upDir=Math.abs(u.offer)>=Math.abs(u.bid), fs=(11+Math.sqrt(Math.abs(u.tot))/7)/Math.sqrt(K);
     const c=el('text',{x:u.x,y:u.y,class:'balmark','font-size':fs,'stroke-width':fs*0.14},gBal);
     c.textContent='£'; const ar=el('tspan',{'font-size':fs*0.6,dy:fs*0.12},c); ar.textContent=upDir?'↑':'↓';
-    c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b>`+row('Region',ZN[u.z]||'')+(u.offer?row('Paid to increase output',gbp(u.offer)):'')+(u.bid>0?row('Paid to reduce output',gbp(u.bid)):u.bid<0?row('Paid back for reducing output',gbp(-u.bid)):'')+row('Half-hour from',fmtT(new Date(BAL.t)))));
+    c.addEventListener('mousemove',e=>showTip(e,`<b>${u.name}</b> · ${ZN[u.z]||''}<div style="margin-top:4px">${unitBalText(u).join('<br>')}</div><div class="hint" style="margin-top:4px">Totals for the half-hour ${balPeriod()}, not per hour</div>`));
     c.addEventListener('mouseleave',hideTip); }
 }
 function pricePanel(){
@@ -549,17 +562,19 @@ function pricePanel(){
   if(!BAL){ bp.innerHTML=`<h3>Balancing payments</h3><p class="hint">${R.live?'Not yet published for the last two hours.':'Not published for this half-hour.'}</p>`; return; }
   const s=balSummary(BAL.units);
   const windDown=BAL.units.filter(u=>u.bid>0&&(PL[u.u]||[])[4]==='WIND').reduce((a,u)=>a+u.bid,0);
-  const windNote=s.downPaid>0&&windDown/s.downPaid>0.5?`<div class="sub">${Math.round(100*windDown/s.downPaid)}% to wind farms, which lose subsidy when switched off</div>`:'';
   const top=BAL.units.slice().sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot)).slice(0,7);
-  const per=BAL.t!==R.spStart?` (latest published: ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))})`:` (${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))})`;
-  bp.innerHTML=`<h3>Balancing payments, one half-hour${per}</h3>
+  const per=BAL.t!==R.spStart?`, ${balPeriod()} (latest published)`:`, ${balPeriod()}`;
+  const dem=R.demand*0.5, addP=dem>0?s.net/dem/10:null;   // £ / MWh used -> p/kWh
+  bp.innerHTML=`<h3>Balancing payments${per}</h3>
+    <p class="hint" style="margin:2px 0 6px">When power can't get from where it's made to where it's needed, or supply and demand drift apart, the system operator pays stations to change their output. These are <b>total amounts for this one half-hour</b>, not rates per hour or per MW.</p>
     <div class="balrows">
-      <div class="br"><span>Paid to units to increase output</span><span>${gbp(s.up)}</span></div>
-      <div class="br"><span>Paid to units to reduce output${windNote}</span><span>${gbp(s.downPaid)}</span></div>
-      <div class="br"><span>Paid back by units reducing output<div class="sub">fuel they did not burn</div></span><span>${gbp(-s.downBack)}</span></div>
-      <div class="br"><span><b>Net cost of balancing actions</b></span><span><b>${gbp(s.net)}</b></span></div>
+      <div class="br"><span>Paid to stations to make more<div class="sub">${mwh(s.vUp)} extra${perMWh(s.up,s.vUp)}</div></span><span>${gbp(s.up)}</span></div>
+      <div class="br"><span>Paid to stations to make less<div class="sub">${mwh(s.vDownPaid)} less${s.downPaid>0&&windDown/s.downPaid>0.5?` · ${Math.round(100*windDown/s.downPaid)}% to wind farms, which lose subsidy when switched off`:''}</div></span><span>${gbp(s.downPaid)}</span></div>
+      <div class="br"><span>Paid back by stations making less<div class="sub">${mwh(s.vDownBack)} less · fuel they didn't burn</div></span><span>${gbp(-s.downBack)}</span></div>
+      <div class="br"><span><b>Net cost for the half-hour</b>${addP!=null?`<div class="sub">about ${addP.toFixed(1)}p per kWh if spread over all electricity used in it</div>`:''}</span><span><b>${gbp(s.net)}</b></span></div>
     </div>
-    <h3>Largest payments</h3><div class="balrows">${top.map(u=>`<div class="br"><span>${u.name.replace(/ \(.*\)$/,'')}<div class="sub">${ZN[u.z]||'location unknown'} · ${Math.abs(u.offer)>=Math.abs(u.bid)?'increase output':'reduce output'}</div></span><span>${gbp(u.tot)}</span></div>`).join('')}</div>`;
+    <h3>Largest payments in the half-hour</h3><div class="balrows">${top.map(u=>{ const up=Math.abs(u.offer)>=Math.abs(u.bid), v=up?u.voffer:-u.vbid;
+      return `<div class="br"><span>${u.name.replace(/ \(.*\)$/,'')}<div class="sub">${ZN[u.z]||'location unknown'} · ${v?mwh(v)+(up?' more':' less'):(up?'make more':'make less')}${u.tot<0?' · paid back':''}</div></span><span>${gbp(u.tot)}</span></div>`; }).join('')}</div>`;
 }
 const fmtT=(d,withDay)=>d.toLocaleString('en-GB',{...(withDay?{weekday:'short',day:'numeric',month:'short'}:{}),hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'});
 let loadSeq=0, stepTimer=null;
@@ -701,8 +716,9 @@ function panel(){
 }
 const SLUG={_A:'eastern',_B:'east-midlands',_C:'london',_D:'merseyside-n-wales',_E:'west-midlands',_F:'north-east',_G:'north-west',_H:'southern',_J:'south-east',_K:'south-wales',_L:'south-west',_M:'yorkshire',_N:'south-scotland',_P:'north-scotland'};
 function select(z,noHash,user){ selected=z; if(user&&innerWidth<900) setTimeout(()=>document.getElementById('zonepanel').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}),50); for(const [k,p] of Object.entries(zonePaths)) p.classList.toggle('sel',k===z); if(!noHash){ try{ history.replaceState(null,'','#'+SLUG[z]); }catch(e){} } if(R){ zonePanel(z); colourZones(); } }
-function zoneBal(z){ if(!BAL) return ''; const us=BAL.units.filter(u=>u.z===z); if(!us.length) return `<p class="ci">No balancing payments here in ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))}.</p>`; const s=balSummary(us);
-  return `<p class="ci">Balancing, ${fmtT(new Date(BAL.t))}–${fmtT(new Date(BAL.t+1800000))}: paid <b>${gbp(s.up)}</b> to increase output here, <b>${gbp(s.downPaid)}</b> to reduce it${s.downBack?`, ${gbp(s.downBack)} paid back`:''}.</p>`; }
+function zoneBal(z){ if(!BAL) return ''; const us=BAL.units.filter(u=>u.z===z); if(!us.length) return `<p class="ci">No balancing payments here in ${balPeriod()}.</p>`; const s=balSummary(us);
+  const parts=[]; if(s.up) parts.push(`<b>${gbp(s.up)}</b> paid to make ${mwh(s.vUp)} more`); if(s.downPaid) parts.push(`<b>${gbp(s.downPaid)}</b> paid to make ${mwh(s.vDownPaid)} less`); if(s.downBack) parts.push(`<b>${gbp(s.downBack)}</b> paid back for making ${mwh(s.vDownBack)} less`);
+  return `<p class="ci">Balancing payments here, ${balPeriod()} (totals for the half-hour): ${parts.join('; ')}.</p>`; }
 function zonePanel(z){
   const q=R.zones[z], mix=R.mix[z], fm=R.fmix[z];
   const label=k=>k.startsWith('_')?(k===z?`${ZN[k]} (local)`:ZN[k]):`${IC_SHORT[k]} (${GEO.ics.find(c=>c.key===k).country})`;
