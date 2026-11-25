@@ -34,7 +34,7 @@ The page is a single self-contained HTML file. It fetches open data directly in 
 | Origin of supply | — | Proportional-sharing flow tracing (Bialek). This is an accounting convention: power does not travel from a specific source to a specific consumer. |
 | Carbon intensity | Approximate emission factors (after NESO's Carbon Intensity API methodology); a separate factor for each interconnector's country | Applied to the traced fuel mix. |
 | Prices | Elexon market index data (APX) and system prices | National figures; no regional price exists in GB. |
-| Balancing payments | Elexon indicative bid and offer cashflows per BM unit | Summed per unit; offers = paid to increase output, positive bids = paid to reduce (typically wind), negative bids = paid back (fuel not burnt). Latest published half-hour in live view. |
+| Balancing payments | Elexon indicative bid and offer cashflows per BM unit | Summed per unit; offers = paid to increase output; bids = paid to reduce output (typically wind, with negative bid prices, as it loses subsidy when switched off) or paid back (positive bid prices: the unit had already sold that power and no longer makes it). Latest published half-hour in live view. |
 | Money | Market index price; LCCC current CfD strike prices and CfD→BM unit mapping (`data/cfd.json`, built by `scripts/build_cfd.py`); balancing cashflows above | Wholesale = MWh × market index for use and generation; CfD = (strike − reference price) × output per contracted unit (no payment at negative prices for AR4+), funded by all demand pro rata; balancing funded by all demand pro rata. Sums to zero with money paid abroad. About 1.3 GW of small distribution-connected CfDs are not counted. |
 | Check | NESO day-ahead constraint flows (SCOTEX / B6) | Shown beside the model's Scotland→England flow. |
 
@@ -57,6 +57,7 @@ scripts/fetch_inputs.sh    downloads build inputs into ./inputs (NESO DNO GeoJSO
 scripts/build_geo.py       builds data/geo.json from ./inputs
 scripts/build_cfd.py       builds data/cfd.json from the LCCC data portal (re-run when contracts start, and after April indexation)
 scripts/assemble.py        inlines geo.json, cfd.json and model.js into index.html
+blog/                      stills used in the explanatory blog post
 ```
 
 ## Rebuilding
