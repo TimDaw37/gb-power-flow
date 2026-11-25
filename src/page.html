@@ -95,6 +95,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0;min-height:cal
 .hide-bal .balmark{display:none}
 .balmark{cursor:default}
 .balmark path{fill:var(--text-primary);stroke:var(--surface-1);stroke-linejoin:round}
+.balleader{stroke:var(--text-primary);opacity:.7}
 .balmark text{fill:var(--surface-1);font-weight:800;text-anchor:middle;dominant-baseline:central;pointer-events:none;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 .pchart{position:relative;margin:6px 0 2px}
 .pchart svg{display:block;width:100%;height:130px;cursor:pointer}
@@ -435,17 +436,21 @@ function unitBalText(u){ const out=[];
   if(u.bid<0) out.push(`Paid back ${gbp(-u.bid)} for making ${u.vbid?mwh(-u.vbid)+' less':'less'} (power it had already sold but didn't make)`);
   return out; }
 const balTip=u=>`<b>${u.name}</b> · ${ZN[u.z]||''}<div style="margin-top:4px">${unitBalText(u).join('<br>')}</div><div class="hint" style="margin-top:4px">Totals for the half-hour ${balPeriod()}, not per hour</div>`;
+const PR=new Map();   // drawn station radius by position, so £ markers sit beside their station rather than on it
 function drawBal(){
-  gBal.innerHTML=''; if(!BAL) return;
+  gBal.innerHTML=''; if(!BAL) return; const shown=!document.getElementById('map').classList.contains('hide-plants');
   // biggest last so the largest payments sit on top
   for(const u of BAL.units.filter(u=>u.x!=null&&Math.abs(u.tot)>=1000).sort((a,b)=>Math.abs(a.tot)-Math.abs(b.tot))){
     // block arrow with a £ inside; height grows with sqrt(£) so its area tracks the amount
     const upDir=Math.abs(u.offer)>=Math.abs(u.bid), h=(14+Math.sqrt(Math.abs(u.tot))/6)/Math.sqrt(K), s=upDir?-1:1;
     const hw=h*0.47, sw=h*0.27, hb=h*0.05;   // head half-width, shaft half-width, head base (from centre)
-    const P=(x,y)=>`${(u.x+x).toFixed(1)},${(u.y+s*y).toFixed(1)}`;
+    // offset to the left of the station circle (names sit on the right), joined by a short leader line
+    const pr=shown?(PR.get(u.x+','+u.y)||0):0, ox=pr?pr+5/K+hw:0, cx=u.x-ox;
+    const P=(x,y)=>`${(cx+x).toFixed(1)},${(u.y+s*y).toFixed(1)}`;
     const c=el('g',{class:'balmark'},gBal);
+    if(ox) el('line',{x1:u.x-pr,y1:u.y,x2:cx+sw,y2:u.y,class:'balleader','stroke-width':1.2/K},c);
     el('path',{d:`M${P(0,h/2)} L${P(hw,hb)} L${P(sw,hb)} L${P(sw,-h/2)} L${P(-sw,-h/2)} L${P(-sw,hb)} L${P(-hw,hb)} Z`,'stroke-width':Math.max(1.2/K,h*0.05)},c);
-    const t=el('text',{x:u.x,y:u.y-s*h*0.14,'font-size':h*0.42},c); t.textContent='£';
+    const t=el('text',{x:cx,y:u.y-s*h*0.14,'font-size':h*0.42},c); t.textContent='£';
     c.addEventListener('mousemove',e=>showTip(e,balTip(u)));
     c.addEventListener('click',e=>{ e.stopPropagation(); showTip(e,balTip(u)); });
     c.addEventListener('mouseleave',hideTip); }
@@ -731,12 +736,12 @@ function drawLayers(){
   // plants
   const maxR=19;
   // one circle per site and fuel: units sharing a location (e.g. Whitelee 1 and 2) are summed, not drawn on top of each other
-  const sites=new Map();
+  const sites=new Map(); PR.clear();
   for(const u of R.units){ if(u.x==null)continue; const k=u.x+','+u.y+','+fuelKey(u.fuel); const st=sites.get(k)||{x:u.x,y:u.y,lx:u.lx,ly:u.ly,land:u.land,fuel:u.fuel,z:u.z,name:u.name,mw:0,units:[]}; st.mw+=u.mw; st.units.push(u); sites.set(k,st); }
   for(const st of sites.values()){ if(st.mw<=5)continue; const r=Math.max(1.6,Math.sqrt(st.mw)/Math.sqrt(2000)*maxR)/Math.sqrt(K);
     // offshore: dashed export cable from the array to where it comes ashore (and is counted)
     if(st.lx!=null) el('line',{x1:st.x,y1:st.y,x2:st.lx,y2:st.ly,class:'cable','stroke-width':1.3/K,'stroke-dasharray':`${4/K} ${3/K}`},gCable);
-    const c=el('circle',{cx:st.x,cy:st.y,r,class:'plant',fill:FCOL[fuelKey(st.fuel)]},gPlants);
+    const c=el('circle',{cx:st.x,cy:st.y,r,class:'plant',fill:FCOL[fuelKey(st.fuel)]},gPlants); PR.set(st.x+','+st.y,r);
     const nm=[...new Set(st.units.map(u=>u.name))].join(' + '), tipHtml=()=>`<b>${nm}</b>`+row(fuelName(st.fuel),fmt(st.mw))+(st.units.length>1?st.units.map(u=>row('Unit '+u.u,fmt(u.mw))).join(''):row('Unit',st.units[0].u))+(st.land?row('Comes ashore',st.land)+row('Counted in',ZN[st.z]):row('Region',ZN[st.z]));
     c.addEventListener('mousemove',e=>showTip(e,tipHtml())); c.addEventListener('click',e=>showTip(e,tipHtml())); c.addEventListener('mouseleave',hideTip); }
   // biggest first so small circles stay on top
@@ -867,7 +872,7 @@ document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=e=>{ const w
 function updateLegendMoney(){ document.querySelectorAll('.lg-power').forEach(n=>n.style.display=mode==='money'?'none':''); document.querySelectorAll('.lg-money').forEach(n=>n.style.display=mode==='money'?'':'none'); }
 document.addEventListener('keydown',e=>{ if(e.target.closest('input,textarea'))return; if(e.key==='ArrowLeft')document.getElementById('prev').click(); if(e.key==='ArrowRight'&&offset>0)document.getElementById('next').click(); });
 document.getElementById('fkeys').innerHTML=FUELS.filter(f=>f[0]!=='Imports').map(([k])=>`<span><i class="sw" style="background:${FCOL[k]}"></i>${k==='Other'?'Other (hydro, storage, oil)':k}</span>`).join('');
-document.getElementById('tPlants').onchange=e=>svg.classList.toggle('hide-plants',!e.target.checked);
+document.getElementById('tPlants').onchange=e=>{ svg.classList.toggle('hide-plants',!e.target.checked); drawBal(); };
 function setUnit(u){ UNIT=u; try{ localStorage.setItem('gbpf-unit',u); }catch(e){} document.querySelectorAll('.unitctl button').forEach(b=>{ b.classList.toggle('on',b.dataset.u===u); b.setAttribute('aria-pressed',b.dataset.u===u); }); if(R&&PRICES) pricePanel(); }
 document.querySelectorAll('.unitctl button').forEach(b=>b.onclick=()=>setUnit(b.dataset.u)); setUnit(UNIT);
 document.getElementById('tBal').onchange=e=>svg.classList.toggle('hide-bal',!e.target.checked);
