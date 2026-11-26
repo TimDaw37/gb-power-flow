@@ -183,7 +183,7 @@ a{color:var(--div-neg)}
       <div class="flowopts">
       <label><input type="checkbox" id="tPlants" checked> Power stations</label>
       <label><input type="checkbox" id="tLabels" checked> Flow values</label>
-      <label><input type="checkbox" id="tBal" checked> Balancing payments</label>
+      <label><input type="checkbox" id="tBal" checked> £ payments</label>
       <div class="mode"><b>Colour regions by</b>
         <label><input type="radio" name="mode" value="balance" checked> Export / import</label>
         <label><input type="radio" name="mode" value="carbon"> Carbon intensity</label>
@@ -209,6 +209,7 @@ a{color:var(--div-neg)}
       <div class="fkeys" id="fkeys"></div>
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,-9 L8.1,-1.8 L2.4,-1.8 L2.4,9 L-2.4,9 L-2.4,-1.8 L-8.1,-1.8 Z" fill="var(--text-primary)"/></svg>paid to make more</div>
       <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><path d="M0,9 L8.1,1.8 L2.4,1.8 L2.4,-9 L-2.4,-9 L-2.4,1.8 L-8.1,1.8 Z" fill="var(--text-primary)"/></svg>paid to make less</div>
+      <div class="row"><svg width="34" height="20" viewBox="-10 -10 20 20"><g transform="rotate(90)"><path d="M0,-9 L8.1,-1.8 L2.4,-1.8 L2.4,9 L-2.4,9 L-2.4,-1.8 L-8.1,-1.8 Z" fill="var(--text-primary)"/></g></svg>on an interconnector: paid abroad (pointing out) or received (pointing in)</div>
       <div class="row" style="padding-left:40px">size = total £ paid in one half-hour</div>
       </div>
     </div>
@@ -438,9 +439,9 @@ function unitBalText(u){ const out=[];
 const balTip=u=>`<b>${u.name}</b> · ${ZN[u.z]||''}<div style="margin-top:4px">${unitBalText(u).join('<br>')}</div><div class="hint" style="margin-top:4px">Totals for the half-hour ${balPeriod()}, not per hour</div>`;
 const PR=new Map();   // drawn station radius by position, so £ markers sit beside their station rather than on it
 function drawBal(){
-  gBal.innerHTML=''; if(!BAL) return; const shown=!document.getElementById('map').classList.contains('hide-plants');
+  gBal.innerHTML=''; if(!R) return; const shown=!document.getElementById('map').classList.contains('hide-plants');
   // biggest last so the largest payments sit on top
-  for(const u of BAL.units.filter(u=>u.x!=null&&Math.abs(u.tot)>=1000).sort((a,b)=>Math.abs(a.tot)-Math.abs(b.tot))){
+  for(const u of (BAL?BAL.units:[]).filter(u=>u.x!=null&&Math.abs(u.tot)>=1000).sort((a,b)=>Math.abs(a.tot)-Math.abs(b.tot))){
     // block arrow with a £ inside; height grows with sqrt(£) so its area tracks the amount
     const upDir=Math.abs(u.offer)>=Math.abs(u.bid), h=(14+Math.sqrt(Math.abs(u.tot))/6)/Math.sqrt(K), s=upDir?-1:1;
     const hw=h*0.47, sw=h*0.27, hb=h*0.05;   // head half-width, shaft half-width, head base (from centre)
@@ -454,6 +455,24 @@ function drawBal(){
     c.addEventListener('mousemove',e=>showTip(e,balTip(u)));
     c.addEventListener('click',e=>{ e.stopPropagation(); showTip(e,balTip(u)); });
     c.addEventListener('mouseleave',hideTip); }
+  // interconnectors: £ paid abroad for imports (arrow points away from Britain) or received for exports (points towards it),
+  // one marker per country, part-way out along its links; valued at the GB market index price for the half-hour
+  const pr=priceFor(R.spStart); if(!pr) return;
+  const P=pr.P, icOff={INTELEC:[0,9],INTFR:[0,-6]}, byC={};
+  for(const c of R.ics){ const o=icOff[c.key]||[0,0], land=[c.x1+o[0],c.y1+o[1]], far=clipToView(land,[c.x2+o[0],c.y2+o[1]]);
+    const q=(byC[c.country] ||= {gb:0,mw:0,lx:0,ly:0,fx:0,fy:0,n:0,links:[]}), v=c.mw*0.5*P;   // v > 0: Britain pays
+    q.gb+=v; q.mw+=c.mw; q.lx+=land[0]; q.ly+=land[1]; q.fx+=far[0]; q.fy+=far[1]; q.n++; q.links.push([c.name,c.mw,v]); }
+  for(const [name,q] of Object.entries(byC)){ if(Math.abs(q.gb)<1000) continue;
+    const lx=q.lx/q.n, ly=q.ly/q.n, fx=q.fx/q.n, fy=q.fy/q.n, L=Math.hypot(fx-lx,fy-ly)||1, ux=(fx-lx)/L, uy=(fy-ly)/L;
+    const px=lx+ux*L*0.68, py=ly+uy*L*0.68, out=q.gb>0, dx=out?ux:-ux, dy=out?uy:-uy;
+    const h=(14+Math.sqrt(Math.abs(q.gb))/6)/Math.sqrt(K), hw=h*0.47, sw=h*0.27, hb=h*0.05, ang=Math.atan2(dy,dx)*180/Math.PI+90;
+    const c=el('g',{class:'balmark icmark'},gBal), a=el('g',{transform:`translate(${px.toFixed(1)},${py.toFixed(1)}) rotate(${ang.toFixed(1)})`},c);
+    el('path',{d:`M0,${-h/2} L${hw},${-hb} L${sw},${-hb} L${sw},${h/2} L${-sw},${h/2} L${-sw},${-hb} L${-hw},${-hb} Z`,'stroke-width':Math.max(1.2/K,h*0.05)},a);
+    const t=el('text',{x:px-dx*h*0.14,y:py-dy*h*0.14,'font-size':h*0.42},c); t.textContent='£';
+    const tip=()=>`<b>${name}</b>`+row(out?'Britain pays, for imports':'Britain is paid, for exports',gbp(Math.abs(q.gb)))+
+      q.links.filter(l=>Math.abs(l[1])>=1).map(l=>row(l[0],`${fmt(Math.abs(l[1]))} ${l[1]>=0?'in':'out'} · ${gbp(Math.abs(l[2]))}`)).join('')+
+      row('Valued at',pu(P)+puLab())+`<div class="hint" style="margin-top:4px">For the half-hour, at the GB market price. The overseas seller is paid its own market's price; the difference goes to the link's owners.</div>`;
+    c.addEventListener('mousemove',e=>showTip(e,tip())); c.addEventListener('click',e=>{ e.stopPropagation(); showTip(e,tip()); }); c.addEventListener('mouseleave',hideTip); }
 }
 function pricePanel(){
   const pt=document.getElementById('ptiles'), pc=document.getElementById('pchart'), bp=document.getElementById('balpanel');
